@@ -1,20 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://codegizer.me/feed.xml" rel="self" type="application/atom+xml" /><link href="http://codegizer.me/" rel="alternate" type="text/html" /><updated>2020-09-16T00:48:09+09:00</updated><id>http://codegizer.me/feed.xml</id><title type="html">코드자이저’s 기술 블로그</title><subtitle>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</subtitle><entry><title type="html">Welcome to Jekyll!</title><link href="http://codegizer.me/2020/09/15/welcome-to-jekyll.html" rel="alternate" type="text/html" title="Welcome to Jekyll!" /><published>2020-09-15T23:35:49+09:00</published><updated>2020-09-15T23:35:49+09:00</updated><id>http://codegizer.me/2020/09/15/welcome-to-jekyll</id><content type="html" xml:base="http://codegizer.me/2020/09/15/welcome-to-jekyll.html">&lt;p&gt;You’ll find this post in your &lt;code class=&quot;highlighter-rouge&quot;&gt;_posts&lt;/code&gt; directory. Go ahead and edit it and re-build the site to see your changes. You can rebuild the site in many different ways, but the most common way is to run &lt;code class=&quot;highlighter-rouge&quot;&gt;jekyll serve&lt;/code&gt;, which launches a web server and auto-regenerates your site when a file is updated.&lt;/p&gt;
-
-&lt;p&gt;Jekyll requires blog post files to be named according to the following format:&lt;/p&gt;
-
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;YEAR-MONTH-DAY-title.MARKUP&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Where &lt;code class=&quot;highlighter-rouge&quot;&gt;YEAR&lt;/code&gt; is a four-digit number, &lt;code class=&quot;highlighter-rouge&quot;&gt;MONTH&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;DAY&lt;/code&gt; are both two-digit numbers, and &lt;code class=&quot;highlighter-rouge&quot;&gt;MARKUP&lt;/code&gt; is the file extension representing the format used in the file. After that, include the necessary front matter. Take a look at the source for this post to get an idea about how it works.&lt;/p&gt;
-
-&lt;p&gt;Jekyll also offers powerful support for code snippets:&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;print_hi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-  &lt;span class=&quot;nb&quot;&gt;puts&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Hi, &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;print_hi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'Tom'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;c1&quot;&gt;#=&amp;gt; prints 'Hi, Tom' to STDOUT.&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;Check out the &lt;a href=&quot;https://jekyllrb.com/docs/home&quot;&gt;Jekyll docs&lt;/a&gt; for more info on how to get the most out of Jekyll. File all bugs/feature requests at &lt;a href=&quot;https://github.com/jekyll/jekyll&quot;&gt;Jekyll’s GitHub repo&lt;/a&gt;. If you have questions, you can ask them on &lt;a href=&quot;https://talk.jekyllrb.com/&quot;&gt;Jekyll Talk&lt;/a&gt;.&lt;/p&gt;</content><author><name></name></author><category term="jekyll" /><category term="update" /><summary type="html">You’ll find this post in your _posts directory. Go ahead and edit it and re-build the site to see your changes. You can rebuild the site in many different ways, but the most common way is to run jekyll serve, which launches a web server and auto-regenerates your site when a file is updated.</summary></entry><entry><title type="html">오라클 함수에서 테이블 형식의 컬렉션을 리턴하기</title><link href="http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return.html" rel="alternate" type="text/html" title="오라클 함수에서 테이블 형식의 컬렉션을 리턴하기" /><published>2020-09-14T23:00:00+09:00</published><updated>2020-09-14T23:00:00+09:00</updated><id>http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return</id><content type="html" xml:base="http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return.html">&lt;p&gt;돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있 때를 가정해보자&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://codegizer.me/feed.xml" rel="self" type="application/atom+xml" /><link href="http://codegizer.me/" rel="alternate" type="text/html" /><updated>2020-09-16T00:51:04+09:00</updated><id>http://codegizer.me/feed.xml</id><title type="html">코드자이저’s 기술 블로그</title><subtitle>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</subtitle><entry><title type="html">오라클 함수에서 테이블 형식의 컬렉션을 리턴하기</title><link href="http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return.html" rel="alternate" type="text/html" title="오라클 함수에서 테이블 형식의 컬렉션을 리턴하기" /><published>2020-09-14T23:00:00+09:00</published><updated>2020-09-14T23:00:00+09:00</updated><id>http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return</id><content type="html" xml:base="http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return.html">&lt;p&gt;돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있 때를 가정해보자&lt;/p&gt;
 &lt;blockquote&gt;
   &lt;p&gt;건당 최대 이체 가능한 금액이 5천만원이다. &lt;br /&gt;
 예를 들어, 1억의 요청에 대해 두번에 걸쳐 5천만씩을 분할하여 조회가 되어야 한다.&lt;/p&gt;
@@ -448,47 +432,4 @@
 
 &lt;h2 id=&quot;감사합니다&quot;&gt;감사합니다!!&lt;/h2&gt;
 
-&lt;p&gt;이번 프로젝트를 함께한 참여사 및 동료들에게 감사의 뜻을 전한다. 혼자 보다는 여럿이가 더 의미있고 진중한 시간을 보낼 수 있음을 다시한번 확인할 수 있었다.&lt;/p&gt;</content><author><name></name></author><category term="실험실" /><category term="design-pattern" /><category term="observer-pattern" /><summary type="html">연계처리 구현 적용사례에 대해 알아보기 전에 먼저 옵저버 패턴에 대해 간략하게 설명하자면 아래와 같다. 옵저버 패턴이란..?</summary></entry><entry><title type="html">Jekyll Toc 테스트</title><link href="http://codegizer.me/2018/04/04/jekyll-toc-test.html" rel="alternate" type="text/html" title="Jekyll Toc 테스트" /><published>2018-04-04T00:15:36+09:00</published><updated>2018-04-04T00:15:36+09:00</updated><id>http://codegizer.me/2018/04/04/jekyll-toc-test</id><content type="html" xml:base="http://codegizer.me/2018/04/04/jekyll-toc-test.html">&lt;h2 id=&quot;목차1&quot;&gt;목차1&lt;/h2&gt;
-&lt;h3 id=&quot;컨텐트1&quot;&gt;컨텐트1&lt;/h3&gt;
-&lt;p&gt;테스트1
-테스트1
-테스트1
-테스트1
-테스트1
-테스트1&lt;/p&gt;
-&lt;h3 id=&quot;컨텐트2&quot;&gt;컨텐트2&lt;/h3&gt;
-&lt;p&gt;테스트1
-테스트1
-테스트1&lt;/p&gt;
-&lt;h3 id=&quot;컨텐트3&quot;&gt;컨텐트3&lt;/h3&gt;
-&lt;p&gt;테스트1테스트1
-테스트1
-테스트1
-테스트1
-테스트1&lt;/p&gt;
-&lt;h2 id=&quot;목차1-1&quot;&gt;목차1&lt;/h2&gt;
-&lt;h3 id=&quot;컨텐트1-1&quot;&gt;컨텐트1&lt;/h3&gt;
-&lt;p&gt;테스트1
-테스트1
-테스트1
-테스트1
-테스트1&lt;/p&gt;
-&lt;h3 id=&quot;컨텐트2-1&quot;&gt;컨텐트2&lt;/h3&gt;
-&lt;p&gt;테스트1
-테스트1
-테스트1
-테스트1
-테스트1&lt;/p&gt;
-&lt;h3 id=&quot;컨텐트3-1&quot;&gt;컨텐트3&lt;/h3&gt;
-&lt;p&gt;테스트1
-테스트1
-테스트1&lt;/p&gt;
-
-&lt;h2 id=&quot;목차1-2&quot;&gt;목차1&lt;/h2&gt;
-&lt;h3 id=&quot;컨텐트1-2&quot;&gt;컨텐트1&lt;/h3&gt;
-&lt;h3 id=&quot;컨텐트2-2&quot;&gt;컨텐트2&lt;/h3&gt;
-&lt;h3 id=&quot;컨텐트3-2&quot;&gt;컨텐트3&lt;/h3&gt;
-&lt;h2 id=&quot;목차1-3&quot;&gt;목차1&lt;/h2&gt;
-&lt;h3 id=&quot;컨텐트1-3&quot;&gt;컨텐트1&lt;/h3&gt;
-&lt;h3 id=&quot;컨텐트2-3&quot;&gt;컨텐트2&lt;/h3&gt;
-&lt;h3 id=&quot;컨텐트3-3&quot;&gt;컨텐트3&lt;/h3&gt;</content><author><name></name></author><category term="jekyll" /><category term="jekyll" /><summary type="html">포스트 초록 내용</summary></entry></feed>
+&lt;p&gt;이번 프로젝트를 함께한 참여사 및 동료들에게 감사의 뜻을 전한다. 혼자 보다는 여럿이가 더 의미있고 진중한 시간을 보낼 수 있음을 다시한번 확인할 수 있었다.&lt;/p&gt;</content><author><name></name></author><category term="실험실" /><category term="design-pattern" /><category term="observer-pattern" /><summary type="html">연계처리 구현 적용사례에 대해 알아보기 전에 먼저 옵저버 패턴에 대해 간략하게 설명하자면 아래와 같다. 옵저버 패턴이란..?</summary></entry></feed>
