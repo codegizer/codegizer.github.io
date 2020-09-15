@@ -1,0 +1,57 @@
+---
+layout: default
+---
+
+<div class="home">
+
+  {{ content }}
+<!--
+  <h1 class="page-heading">Posts</h1>
+-->  
+  <div class="post-list">
+    {% for post in paginator.posts %}
+      <article>
+        <header>
+            <h2 class="post-title">
+                <a class="post-link" href="{{ post.url | relative_url }}">
+                  {{ post.title | escape }}
+                  {% if post.series %}
+                    <span class="series">SERIES {{ post.series }}</span>
+                  {% endif %}
+                </a>                
+              </h2>
+        </header>
+        <section class="post-excerpt" itemprop="description">
+            <p>{{ post.excerpt | strip_html | truncatewords: 50 }}</p>
+          </section>
+        {% assign date_format = site.minima.date_format | default: "%b %-d, %Y" %}
+        
+        <div class="post-meta">
+          <time datetime="{{ post.date | date_to_long_string }}">{{ post.date | date_to_long_string }}</time>
+          <i class="nf nf-fa-comment" aria-hidden="true"></i>
+          {% if post.fb_social_baseurl %} 
+            <span class="fb-comments-count" data-href="{{ post.fb_social_baseurl }}{{ post.url }}"></span>
+          {% else %}
+            <span class="fb-comments-count" data-href="{{ site.url }}{{ post.url }}"></span>
+          {% endif %}
+        </div>
+
+      </article>
+    {% endfor %}
+  </ul>
+  <nav class="pagination" role="navigation">
+    {% if paginator.next_page %}
+      <a class="newer-posts" href="/page{{paginator.next_page}}">&larr; Older posts</a>
+    {% endif %}
+    <span class="page-number">Page {{ paginator.page }} of {{ paginator.total_pages }}</span>
+    {% if paginator.previous_page %}
+      {% if paginator.page == 2 %}
+        <a class="older-posts" href="/">Newer posts &rarr;</a>
+      {% else %}
+        <a class="older-posts" href="/page{{paginator.previous_page}}">Newer posts &rarr;</a>
+      {% endif %}
+    {% endif %}
+  </nav>
+  <p class="rss-subscribe">subscribe <a href="{{ "/feed.xml" | relative_url }}">via RSS</a></p>
+
+</div>

@@ -1,0 +1,25 @@
+{
+  "name": "codegizer.github.io",
+  "version": "1.0.0",
+  "description": "by jekyll",
+  "main": "gulpfile.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "predeploy": "bundle exec jekyll build",
+    "deploy": "gulp deploy"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codegizer/codegizer.github.io.git"
+  },
+  "author": "Chungsub Kim <codegizer_kim@gmail.com> (codegizer_kim@gmail.com)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/codegizer/codegizer.github.io/issues"
+  },
+  "homepage": "https://github.com/codegizer/codegizer.github.io#readme",
+  "devDependencies": {
+    "gulp": "^4.0.2",
+    "gulp-gh-pages": "^0.5.4"
+  }
+}
