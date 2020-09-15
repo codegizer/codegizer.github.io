@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>옵저버 서비스 레지스트리 구현</title>
+  <meta name="description" content="연계처리 구현 적용사례에 대해 알아보기 전에 먼저 옵저버 패턴에 대해 간략하게 설명하자면 아래와 같다. 옵저버 패턴이란..?">
+
+  <link rel="stylesheet"href="/css/main.css?1600184889522828300" />
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="canonical" href="http://codegizer.me/2020/04/21/lab-observer-service-registry-ver2.html">
+  <link rel="alternate" type="application/rss+xml" title="코드자이저&#39;s 기술 블로그" href="/feed.xml">
+  
+  
+
+  <script type="text/javascript" src="/assets/js/jquery-3.3.1.min.js"></script>
+</head>
+
+
+  <body>
+
+    <!--
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId            : '489041618160466',
+      autoLogAppEvents : true,
+      xfbml            : true,
+      version          : 'v2.12'
+    });
+  };
+
+  (function(d, s, id){
+     var js, fjs = d.getElementsByTagName(s)[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement(s); js.id = id;
+     js.src = "https://connect.facebook.net/en_US/sdk.js";
+     fjs.parentNode.insertBefore(js, fjs);
+   }(document, 'script', 'facebook-jssdk'));
+</script>
+-->
+<header class="site-header" role="banner">
+
+  <div class="wrapper">
+    
+    
+    <a class="site-title" href="/">코드자이저&#39;s 기술 블로그</a>
+  
+    
+      <nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+              <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+              <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger">
+          
+            
+            
+          
+            
+            
+            <a class="page-link" href="/about/">About</a>
+            
+          
+            
+            
+            <a class="page-link" href="/about/">About</a>
+            
+          
+            
+            
+            <a class="page-link" href="/categories/">Categories</a>
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+            <a class="page-link" href="/tags/">Tags</a>
+            
+          
+            
+            
+          
+            
+            
+          
+        </div>
+      </nav>
+    
+  </div>
+</header>
+
+
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">옵저버 서비스 레지스트리 구현</h1>
+    <p class="post-meta">
+      <time datetime="2020-04-21T23:00:00+09:00" itemprop="datePublished">
+        
+        Apr 21, 2020
+      </time>
+      </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p><code class="highlighter-rouge">연계처리 구현 적용사례에 대해 알아보기 전에 먼저 옵저버 패턴에 대해 간략하게 설명하자면 아래와 같다.</code></p>
+
+<h2 id="옵저버-패턴이란">옵저버 패턴이란..?</h2>
+
+<ol>
+  <li>
+    <p>한 객체의 상태가 바뀌면 그 객체에 의존하는 다른 객체들에게 그 정보를 알려주는 디자인 패턴으로서 발행/구독 모델이라고도 한다.</p>
+  </li>
+  <li>
+    <p>옵저버 패턴은 주제(Subject)라 불리는 이벤트를 발생시키는 관찰대상 객체 하나와 이벤트를 구독하는 N개 이상의 구독자(Observer)로 이루어진다.</p>
+  </li>
+</ol>
+
+<p><img src="/assets/article_images/2020-02-12-lab-observer-service-registry-ver2/design_pattern_observer_uml.png" alt="옵저버패턴 클래스 다이어그램" /></p>
+
+<h2 id="옵저버-패턴의-장점">옵저버 패턴의 장점!!</h2>
+
+<ol>
+  <li>주제와 구독자의 관계를 느슨하게 유지할 수있다.</li>
+  <li>주제는 구독자가 이벤트에 대해 어떤 처리를 하는지 알지 않아도 된다.</li>
+  <li>구독자가 추가되어도 주제를 변경하지 않아도 된다.</li>
+</ol>
+
+<blockquote>
+  <p>이런한 장점은 다음의 구현사례에서도 드러났다.</p>
+</blockquote>
+
+<p><br /></p>
+
+<h2 id="어쩌다-도입을-하게되었을까">어쩌다 도입을 하게되었을까..?</h2>
+
+<ol>
+  <li>
+    <p>자동 결의서 생성 기능을 통해 여러 업무에서 결의서를 생성할 수 있도록 했다. 이때, 개발자들이 해당 결의서의 결재처리나 삭제시의 이벤트를 각 업무에서 부가적인 처리를 하고 싶어했다.</p>
+  </li>
+  <li>
+    <p>이벤트를 처리하기 위해서 결의서 처리로직에 각 업무에 대한 비즈니스 로직을 끼어 넣고자 하는 지속적인 요구가 있었고, 그에 대응하여 나의 코드를 지켜내어야만 했다.</p>
+  </li>
+</ol>
+
+<p><br /></p>
+
+<h2 id="개발자들의-요구를-그대로-수용했다면">개발자들의 요구를 그대로 수용했다면..?</h2>
+
+<ol>
+  <li>결의서 처리로직은 다른 업무로직와의 결합도가 기하급수적으로 높아지고 관리 범위가 넓어지게 된다.</li>
+  <li>자칫 개발자들의 부주의로 인한 간헐적인 실수가 코드에 결함을 일으키게 되어 신뢰할 수 없게 되고, 결의서와 연관된 연계업무들의 소스코드가 뒤엉켜 각 연계업무들의 기능을 보장할 수 없게된다.</li>
+  <li>다수의 개발자가 하나의 결의서 소스코드에서 작업할 때 동기화가 쉽지 않고 작업간의 충돌이 발생할 수 있다.</li>
+  <li>추후 유지보수가 어렵게 되고 리팩토링이 불가능할 수 있다.</li>
+</ol>
+
+<p><br /></p>
+
+<h2 id="그래서">그래서!!!</h2>
+<p>연계업무의 결의서 후처리 로직와 결의서 로직을 분리하여 각자의 코드에 대해서만 책임을 가지고 개발을 할 수 있도록, 스프링 기반의 몇가지 제약사항을 고려하여 프로토타입을 구현하게 되었다.</p>
+
+<ol>
+  <li>
+    <p>결의서의 저장/삭제/승인취소 등의 이벤트를 타연계업무에 전달할 수 있는 방법이 필요했다. Redis의 발행(Publisher))/구독(Subscribe) 개념와 MSA(마이크크로서비스아키텍처)에서 서비스의 위치를 보관하고 검색할 수 있는 서비스레지스트리 개념을 이용하고자 했다.</p>
+  </li>
+  <li>
+    <p>그러다 문득 옵저버 패턴이 스쳐 지나가길래 검색을 해봤는데, 옵저버패턴이 이 두 개념을 모두 충족해주고 있었다.</p>
+  </li>
+  <li>
+    <p>우선 서비스레지스트리에 옵저버들의 인스턴스를 등록할 수 있어야 했다. 처음에는 리플렉션을 기반으로 인스턴스를 동적 생성하여 서비스레지스트리에 등록하려했지만 이 경우 스프링 기반으로 작성된 비즈니스 로직들이 올바르게 동작하지 않았다.(예를 들어 DI와 트랜잭션 처리가 가장 큰 문제였다.)</p>
+  </li>
+  <li>
+    <p>스프링 기반에서 빈을 동적으로 호출할 방법을 찾아야했다. 이에 대해서는 두가지 방법이 있다. 빈 팩토리와 컨텍스트의 getBean을 이용해 빈의 인스턴스를 구하여 호출도 가능하다. 그렇지만 이 두 방법을 쓰지 않고 WAS기동시 옵저버를 구현하는 빈이 초기화될때 직접 서비스레지스트리에 등록이 되도록 옵저버 구현 클래스의 register 메소드에 @PostConstruct 애노테이션을 적용하도록 했다.</p>
+  </li>
+  <li>
+    <p>지금 생각해보면 옵저버를 구현한 클래스의 Bean 정보를 Subject와 관련된 엔티티에 담을 수도 있었을 것 같다. 각 엔티티는 어떤 옵저버에 연계처리를 요청할지 알고 있기 때문에, 구지 서비스레지스트리의 콜렉션에 보관할 필요가 없고, Subject에서 엔티티에 담긴 Bean 이름을 getBean을 이용해 찾아 호출할 수도 있었겠다.. 무쪼록 나는 내가 했던 구상을 따라 구현을 하다보니 옵저버가 직접 서비스레지스트리에 등록하는 방법을 택하게 되었다.</p>
+  </li>
+</ol>
+
+<p><br /></p>
+<h2 id="클래스-다이어그램">클래스 다이어그램</h2>
+
+<p>아래에는 프로토타입으로 구현해본 옵저버 서비스 레지스트리의 클래스 다이어그램이다.</p>
+
+<p><img src="/assets/article_images/2020-02-12-lab-observer-service-registry-ver2/observer_after_architecture.png" alt="이벤트 후처리 클래스 다이어그램" /></p>
+
+<ol>
+  <li>다이어그램에서 레지스트리 역할을 하는 옵저버관리서비스는 연계업무별 옵저버를 구현한 Bean의 인스턴스가 등록되어 관리되는 곳이다.</li>
+  <li>결의서에서 저장/삭제 및 승인처리시 결의서에 저장된 <strong>‘태스크ID’</strong>를 이용해 옵저버 인스턴스를 구현한 특정 옵저버구현 Bean을 서비스레지스트리에서 찾아 연계처리 요청을 전달하게 된다.</li>
+</ol>
+
+<p><br /></p>
+
+<h2 id="프로토타입-구현">프로토타입 구현</h2>
+
+<h3 id="1-옵저버-인터페이스">1. 옵저버 인터페이스</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">package</span> <span class="nn">kr.co.apps.service</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">interface</span> <span class="nc">Observer</span> <span class="o">{</span>
+	
+	<span class="c1">//컨테이너 초기화시 서비스레지스트리에 인스턴스를 등록한다.</span>
+	<span class="kd">public</span> <span class="kt">void</span> <span class="nf">register</span><span class="o">();</span>
+	
+	<span class="c1">//이벤트를 수신한다.</span>
+	<span class="kd">public</span> <span class="kt">void</span> <span class="nf">update</span><span class="o">(</span><span class="nc">CbEventType</span> <span class="n">evntType</span><span class="o">);</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<h3 id="2-서비스레지스트리-인터페이스">2. 서비스레지스트리 인터페이스</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">package</span> <span class="nn">kr.co.apps.service</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">java.util.ArrayList</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.Map</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">interface</span> <span class="nc">IServiceRegistry</span> <span class="o">{</span>
+	
+	<span class="c1">//옵저버를 구현한 클래스들이 자신의 인스턴스(Bean)을 등록한다.</span>
+	<span class="kd">public</span> <span class="kt">void</span> <span class="nf">register</span><span class="o">(</span><span class="nc">String</span> <span class="n">taskId</span><span class="o">,</span> <span class="nc">Observer</span> <span class="n">observer</span><span class="o">);</span>
+	
+	<span class="c1">//작업ID에 따른 옵저버들에 이벤트 전달</span>
+	<span class="kd">public</span> <span class="kt">void</span> <span class="nf">notify</span><span class="o">(</span><span class="nc">String</span> <span class="n">taskId</span><span class="o">,</span> <span class="nc">CbEventType</span> <span class="n">eventType</span><span class="o">);</span>
+	
+	<span class="c1">//서비스레지스트리에 등록된 인스턴스 현황을 가져온다.</span>
+	<span class="kd">public</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span><span class="nc">String</span><span class="o">&gt;&gt;</span> <span class="nf">selectRegistryList</span><span class="o">();</span>	
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="3-옵저버관리서비스서비스레지스트리-구현">3. 옵저버관리서비스(서비스레지스트리) 구현</h3>
+
+<p>옵저버들은 공통된 인터페이스로 구현되어, 스프링 초기화시 서비스레지스트리에 내부에 옵저버들의 보관소로 쓰이는 콜렉션으로써 해쉬맵을 이용하며, 이 보관소에는 Key로 쓰이는  <strong>‘태스크ID’</strong>를, 그에 따른 값으로 옵저버의 인스턴스가 쌍으로 저장되게하였다.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">package</span> <span class="nn">kr.co.apps.service</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">java.util.ArrayList</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.HashMap</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.Iterator</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.Map</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">org.springframework.stereotype.Service</span><span class="o">;</span>
+
+<span class="nd">@Service</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ServiceRegistry</span> <span class="kd">implements</span> <span class="nc">IServiceRegistry</span> <span class="o">{</span>
+	
+	<span class="kd">private</span> <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span><span class="nc">Observer</span><span class="o">&gt;</span> <span class="n">registyMap</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span><span class="nc">Observer</span><span class="o">&gt;();</span>  
+	
+	<span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="kt">void</span> <span class="nf">register</span><span class="o">(</span><span class="nc">String</span> <span class="n">taskId</span><span class="o">,</span> <span class="nc">Observer</span> <span class="n">observer</span><span class="o">)</span> <span class="o">{</span>
+		<span class="c1">// TODO Auto-generated method stub</span>
+		<span class="n">registyMap</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">taskId</span><span class="o">,</span><span class="n">observer</span><span class="o">);</span>
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"새로운 옵저버가 등록되었습니다===&gt;"</span><span class="o">);</span>
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"태스크ID :"</span> <span class="o">+</span> <span class="n">taskId</span> <span class="o">);</span>
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"이벤트처리 옵저버 :"</span> <span class="o">+</span> <span class="n">observer</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getName</span><span class="o">()</span> <span class="o">);</span>
+	<span class="o">}</span>
+
+	<span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="kt">void</span> <span class="nf">notify</span><span class="o">(</span><span class="nc">String</span> <span class="n">taskId</span><span class="o">,</span> <span class="nc">CbEventType</span> <span class="n">eventType</span><span class="o">)</span> <span class="o">{</span>
+		<span class="c1">// TODO Auto-generated method stub</span>
+		<span class="nc">Observer</span> <span class="n">observer</span> <span class="o">=</span> <span class="n">registyMap</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">taskId</span><span class="o">);</span>
+		
+		<span class="k">if</span><span class="o">(</span><span class="n">observer</span><span class="o">!=</span><span class="kc">null</span><span class="o">)</span> <span class="n">observer</span><span class="o">.</span><span class="na">update</span><span class="o">(</span><span class="n">eventType</span><span class="o">);</span>
+		
+	<span class="o">}</span>
+
+	<span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span><span class="nc">String</span><span class="o">&gt;&gt;</span> <span class="nf">selectRegistryList</span><span class="o">()</span> <span class="o">{</span>
+		
+		<span class="nc">List</span><span class="o">&lt;</span><span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span><span class="nc">String</span><span class="o">&gt;&gt;</span> <span class="n">list</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;</span><span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span><span class="nc">String</span><span class="o">&gt;&gt;();</span>
+		<span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">map</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+		<span class="c1">// TODO Auto-generated method stub</span>
+		<span class="nc">Iterator</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">keys</span> <span class="o">=</span> <span class="n">registyMap</span><span class="o">.</span><span class="na">keySet</span><span class="o">().</span><span class="na">iterator</span><span class="o">();</span>
+		
+		<span class="k">while</span><span class="o">(</span><span class="n">keys</span><span class="o">.</span><span class="na">hasNext</span><span class="o">())</span>
+		<span class="o">{</span>
+			<span class="n">map</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span><span class="nc">String</span><span class="o">&gt;();</span>
+			<span class="n">map</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"TASKID"</span><span class="o">,</span> <span class="n">keys</span><span class="o">.</span><span class="na">next</span><span class="o">());</span>
+			<span class="n">map</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"CLASS_NAME"</span><span class="o">,</span> <span class="n">registyMap</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">map</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"TASKID"</span><span class="o">).</span><span class="na">toString</span><span class="o">()).</span><span class="na">getClass</span><span class="o">().</span><span class="na">getName</span><span class="o">());</span>
+			<span class="n">list</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">map</span><span class="o">);</span>
+		<span class="o">}</span>
+		
+		<span class="k">return</span> <span class="n">list</span><span class="o">;</span>
+	<span class="o">}</span>
+
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<h3 id="4-옵저버-구현">4. 옵저버 구현</h3>
+
+<p>이제 결의서 관련 연계업무의 옵저버들은 결의서 이벤트 발생시 이를 전달받아, 그에 따른 연계업무의 부가적인 처리를 한다.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">package</span> <span class="nn">kr.co.apps.service</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">javax.annotation.PostConstruct</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">javax.swing.event.DocumentEvent.EventType</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">org.springframework.beans.factory.annotation.Autowired</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.springframework.stereotype.Service</span><span class="o">;</span>
+
+<span class="nd">@Service</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">TestObserver</span> <span class="kd">implements</span> <span class="nc">Observer</span> <span class="o">{</span>
+
+	<span class="nd">@Autowired</span>
+	<span class="nc">ServiceRegistry</span> <span class="n">serviceRegistry</span><span class="o">;</span>
+	
+	<span class="nd">@PostConstruct</span>
+	<span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="kt">void</span> <span class="nf">register</span><span class="o">()</span> <span class="o">{</span>
+		<span class="n">serviceRegistry</span><span class="o">.</span><span class="na">register</span><span class="o">(</span><span class="s">"ERP3401"</span><span class="o">,</span> <span class="k">this</span><span class="o">);</span>
+	<span class="o">}</span>
+
+	<span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="kt">void</span> <span class="nf">update</span><span class="o">(</span><span class="nc">CbEventType</span> <span class="n">evntType</span><span class="o">)</span> <span class="o">{</span>
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"ERP3401 업데이트==="</span><span class="o">+</span> <span class="n">evntType</span>	<span class="o">);</span>
+		
+	<span class="o">}</span>
+
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="5-후처리-이벤트-enum-정의">5. 후처리 이벤트 ENUM 정의</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">package</span> <span class="nn">kr.co.apps.service</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">enum</span> <span class="nc">CbEventType</span><span class="o">{</span>
+	
+    <span class="no">EDIT</span><span class="o">,</span>       <span class="c1">//편집요청</span>
+    <span class="no">DELETE</span><span class="o">,</span>     <span class="c1">//삭제요청</span>
+    <span class="no">CANCEL</span><span class="o">,</span>     <span class="c1">//승인취소 요청</span>
+    <span class="no">APPROVE</span>     <span class="c1">//결재처리요청</span>
+    
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<h3 id="6-컨트롤러">6. 컨트롤러</h3>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">package</span> <span class="n">kr</span><span class="p">.</span><span class="n">co</span><span class="p">.</span><span class="n">apps</span><span class="p">;</span>
+
+<span class="n">import</span> <span class="n">java</span><span class="p">.</span><span class="n">text</span><span class="p">.</span><span class="n">DateFormat</span><span class="p">;</span>
+<span class="n">import</span> <span class="n">java</span><span class="p">.</span><span class="n">util</span><span class="p">.</span><span class="n">Date</span><span class="p">;</span>
+<span class="n">import</span> <span class="n">java</span><span class="p">.</span><span class="n">util</span><span class="p">.</span><span class="n">Locale</span><span class="p">;</span>
+
+<span class="n">import</span> <span class="n">javax</span><span class="p">.</span><span class="n">servlet</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">HttpServletRequest</span><span class="p">;</span>
+
+<span class="n">import</span> <span class="n">org</span><span class="p">.</span><span class="n">slf4j</span><span class="p">.</span><span class="n">Logger</span><span class="p">;</span>
+<span class="n">import</span> <span class="n">org</span><span class="p">.</span><span class="n">slf4j</span><span class="p">.</span><span class="n">LoggerFactory</span><span class="p">;</span>
+<span class="n">import</span> <span class="n">org</span><span class="p">.</span><span class="n">springframework</span><span class="p">.</span><span class="n">beans</span><span class="p">.</span><span class="n">factory</span><span class="p">.</span><span class="n">annotation</span><span class="p">.</span><span class="n">Autowired</span><span class="p">;</span>
+<span class="n">import</span> <span class="n">org</span><span class="p">.</span><span class="n">springframework</span><span class="p">.</span><span class="n">stereotype</span><span class="p">.</span><span class="n">Controller</span><span class="p">;</span>
+<span class="n">import</span> <span class="n">org</span><span class="p">.</span><span class="n">springframework</span><span class="p">.</span><span class="n">ui</span><span class="p">.</span><span class="k">Model</span><span class="p">;</span>
+<span class="n">import</span> <span class="n">org</span><span class="p">.</span><span class="n">springframework</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">bind</span><span class="p">.</span><span class="n">annotation</span><span class="p">.</span><span class="n">RequestMapping</span><span class="p">;</span>
+<span class="n">import</span> <span class="n">org</span><span class="p">.</span><span class="n">springframework</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">bind</span><span class="p">.</span><span class="n">annotation</span><span class="p">.</span><span class="n">RequestMethod</span><span class="p">;</span>
+
+<span class="n">import</span> <span class="n">kr</span><span class="p">.</span><span class="n">co</span><span class="p">.</span><span class="n">apps</span><span class="p">.</span><span class="n">service</span><span class="p">.</span><span class="n">CbEventType</span><span class="p">;</span>
+<span class="n">import</span> <span class="n">kr</span><span class="p">.</span><span class="n">co</span><span class="p">.</span><span class="n">apps</span><span class="p">.</span><span class="n">service</span><span class="p">.</span><span class="n">ServiceRegistry</span><span class="p">;</span>
+
+<span class="n">Handles</span> <span class="n">requests</span> <span class="n">for</span> <span class="n">the</span> <span class="n">application</span> <span class="n">home</span> <span class="n">page</span><span class="p">.</span>
+ <span class="p">*/</span>
+<span class="p">@</span><span class="n">Controller</span>
+<span class="p">@</span><span class="n">RequestMapping</span><span class="p">(</span><span class="s2">"/reg"</span><span class="p">)</span>
+<span class="k">public</span> <span class="n">class</span> <span class="n">HomeController</span> <span class="p">{</span>
+	
+	<span class="n">private</span> <span class="n">static</span> <span class="n">final</span> <span class="n">Logger</span> <span class="n">logger</span> <span class="p">=</span> <span class="n">LoggerFactory</span><span class="p">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">HomeController</span><span class="p">.</span><span class="n">class</span><span class="p">);</span>
+	
+	<span class="p">@</span><span class="n">Autowired</span>
+	<span class="n">ServiceRegistry</span> <span class="n">serviceRegistry</span><span class="p">;</span>
+	
+	<span class="p">//</span> <span class="err">서비스</span> <span class="err">레지스트리</span> <span class="err">현황</span> <span class="err">목록</span>
+	<span class="p">@</span><span class="n">RequestMapping</span><span class="p">(</span><span class="n">value</span> <span class="p">=</span> <span class="s2">"/get"</span><span class="p">,</span> <span class="n">method</span> <span class="p">=</span> <span class="n">RequestMethod</span><span class="p">.</span><span class="n">GET</span><span class="p">)</span>
+	<span class="k">public</span> <span class="k">String</span> <span class="n">home</span><span class="p">(</span><span class="n">Locale</span> <span class="n">locale</span><span class="p">,</span> <span class="k">Model</span> <span class="k">model</span><span class="p">)</span> <span class="p">{</span>
+		<span class="n">logger</span><span class="p">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Welcome home! The client locale is {}."</span><span class="p">,</span> <span class="n">locale</span><span class="p">);</span>
+		
+		<span class="n">Date</span> <span class="n">date</span> <span class="p">=</span> <span class="n">new</span> <span class="n">Date</span><span class="p">();</span>
+		<span class="n">DateFormat</span> <span class="n">dateFormat</span> <span class="p">=</span> <span class="n">DateFormat</span><span class="p">.</span><span class="n">getDateTimeInstance</span><span class="p">(</span><span class="n">DateFormat</span><span class="p">.</span><span class="n">LONG</span><span class="p">,</span> <span class="n">DateFormat</span><span class="p">.</span><span class="n">LONG</span><span class="p">,</span> <span class="n">locale</span><span class="p">);</span>
+		
+		<span class="k">String</span> <span class="n">formattedDate</span> <span class="p">=</span> <span class="n">dateFormat</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">date</span><span class="p">);</span>
+		
+		<span class="k">model</span><span class="p">.</span><span class="n">addAttribute</span><span class="p">(</span><span class="s2">"serverTime"</span><span class="p">,</span> <span class="n">formattedDate</span> <span class="p">);</span>
+		
+		<span class="p">//</span><span class="err">서비레지스트리</span> <span class="err">목록을</span> <span class="err">리턴합니다</span><span class="p">.</span>
+		<span class="k">model</span><span class="p">.</span><span class="n">addAttribute</span><span class="p">(</span><span class="s2">"registryMap"</span><span class="p">,</span> <span class="n">serviceRegistry</span><span class="p">.</span><span class="n">selectRegistryList</span><span class="p">());</span>
+		
+		<span class="n">return</span> <span class="s2">"home"</span><span class="p">;</span>
+	<span class="p">}</span>
+	
+	<span class="p">//</span> <span class="err">옵저버들에</span> <span class="err">이벤트</span> <span class="err">전달</span><span class="p">.</span>
+	<span class="p">@</span><span class="n">RequestMapping</span><span class="p">(</span><span class="n">value</span> <span class="p">=</span> <span class="s2">"/post"</span><span class="p">,</span> <span class="n">method</span> <span class="p">=</span> <span class="n">RequestMethod</span><span class="p">.</span><span class="n">POST</span><span class="p">)</span>
+	<span class="k">public</span> <span class="k">String</span> <span class="n">home</span><span class="p">(</span><span class="n">HttpServletRequest</span> <span class="n">request</span><span class="p">,</span> <span class="k">Model</span> <span class="k">model</span><span class="p">)</span> <span class="p">{</span>
+		<span class="p">//</span><span class="err">작업</span><span class="n">ID</span><span class="err">에</span> <span class="err">해댕하는</span> <span class="err">옵저버</span> <span class="err">인스턴스에</span> <span class="err">이벤트를</span> <span class="err">전달</span>
+		<span class="n">serviceRegistry</span><span class="p">.</span><span class="n">notify</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="n">getParameter</span><span class="p">(</span><span class="s2">"taskid"</span><span class="p">),</span> <span class="n">CbEventType</span><span class="p">.</span><span class="n">APPROVE</span><span class="p">);</span>
+		<span class="p">//</span><span class="err">서비스레지스트리</span> <span class="err">목록</span>
+		<span class="k">model</span><span class="p">.</span><span class="n">addAttribute</span><span class="p">(</span><span class="s2">"registryMap"</span><span class="p">,</span> <span class="n">serviceRegistry</span><span class="p">.</span><span class="n">selectRegistryList</span><span class="p">());</span>
+		<span class="n">return</span> <span class="s2">"home"</span><span class="p">;</span>
+	<span class="p">}</span>
+	
+<span class="p">}</span>
+
+</code></pre></div></div>
+
+<h3 id="7-jsp">7. JSP</h3>
+
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;</span><span class="err">%@</span> <span class="na">page</span> <span class="na">language=</span><span class="s">"java"</span> <span class="na">contentType=</span><span class="s">"text/html; charset=UTF-8"</span>
+    <span class="na">pageEncoding=</span><span class="s">"UTF-8"</span><span class="err">%</span><span class="nt">&gt;</span>
+<span class="nt">&lt;</span><span class="err">%@</span> <span class="na">taglib</span> <span class="na">uri = </span><span class="s">"http://java.sun.com/jsp/jstl/core"</span> <span class="na">prefix = </span><span class="s">"c"</span> <span class="err">%</span><span class="nt">&gt;</span>
+<span class="nt">&lt;html&gt;</span>
+<span class="nt">&lt;head&gt;</span> 
+	<span class="nt">&lt;title&gt;</span>Home<span class="nt">&lt;/title&gt;</span>
+<span class="nt">&lt;/head&gt;</span>
+<span class="nt">&lt;body&gt;</span>
+<span class="nt">&lt;h1&gt;</span>
+	Hello world!  
+<span class="nt">&lt;/h1&gt;</span>
+
+<span class="nt">&lt;P&gt;&lt;b&gt;</span>등록된 서비스 레지스트리 현황<span class="nt">&lt;/b&gt;</span> <span class="nt">&lt;/P&gt;</span>
+
+<span class="nt">&lt;c:forEach</span> <span class="na">items=</span><span class="s">"${registryMap}"</span> <span class="na">var=</span><span class="s">"registry"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;li&gt;</span>
+	${registry.TASKID} ===&gt; ${registry.CLASS_NAME}
+<span class="nt">&lt;/li&gt;</span>
+<span class="nt">&lt;/c:forEach&gt;</span>
+<span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">"./post"</span> <span class="na">method=</span><span class="s">"post"</span><span class="nt">&gt;</span>
+	<span class="c">&lt;!--작업ID가 ERP3401인 옵저버에 이벤트를 전달--&gt;</span>
+	<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"text"</span> <span class="na">name=</span><span class="s">"taskid"</span> <span class="na">value=</span><span class="s">"ERP3401"</span><span class="nt">&gt;</span>
+	<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"submit"</span> <span class="na">value=</span><span class="s">"전송"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;/form&gt;</span>
+<span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
+
+</code></pre></div></div>
+
+<p><br /></p>
+
+<h2 id="이를-구현함으로써-다음의-처리가-가능해졌다">이를 구현함으로써 다음의 처리가 가능해졌다.</h2>
+
+<ol>
+  <li>
+    <p>연계업무로직에서 직접 결의서를 생성할때는 연계업무로직에 주도권이 있어 생성 호출시 파라미터를 제어하고 결과를 이용해 연계업무에 필요한 부가적인 처리를 할 수 있다.</p>
+  </li>
+  <li>
+    <p>그렇지만 결의서 자체에서 수정, 삭제, 결제처리 등의 이벤트를 발생할 때는 결의서 처리 프로세스로만 끝나게된다. 이때 옵저버패턴을 이용해 평소에는 연결이 없는 느슨한 상태의 연계업무 관련 옵저버에 이벤트와 파라미터를 전달하여 연계업무의 부가적인 처리가 가능하다.</p>
+  </li>
+  <li>
+    <p>예를 들어, 결의서 삭제 전 후에 대한 이벤트를 옵저버에 전달하여하여 삭제가 가능한 결의서인지 연계업무에 물어보고 삭제 시에는 연계업무의 해당 데이터를 함께 지우도록 할 수 있다.</p>
+  </li>
+</ol>
+
+<p><br /></p>
+
+<h2 id="데모는-아래에서-확인-가능합니다">데모는 아래에서 확인 가능합니다.</h2>
+
+<p>어디에나 쉽게 응용할 수 있는 형태의 오픈소스로 재작성된 데모 애플리케이션 영상와 소스코드를 아래에 공개합니다.</p>
+
+<h4 id="1-데모-애플리케이션-영상">1. 데모 애플리케이션 영상</h4>
+
+<p><a href="https://youtu.be/LWjt0Uf1DZQ?t=0s"><img src="http://img.youtube.com/vi/LWjt0Uf1DZQ/0.jpg" alt="Video Label" /></a></p>
+
+<p></p>
+<h4 id="2-깃허브주소-공개">2. 깃허브주소 공개</h4>
+
+<p><a href="https://github.com/codegizer/lab-observer-registry">https://github.com/codegizer/lab-observer-registry</a></p>
+
+<h2 id="감사합니다">감사합니다!!</h2>
+
+<p>이번 프로젝트를 함께한 참여사 및 동료들에게 감사의 뜻을 전한다. 혼자 보다는 여럿이가 더 의미있고 진중한 시간을 보낼 수 있음을 다시한번 확인할 수 있었다.</p>
+
+
+    <p class="tags">
+      
+        <a href="/tags#design-pattern-ref">design-pattern</a>
+      
+        <a href="/tags#observer-pattern-ref">observer-pattern</a>
+      
+    </p>
+  </div>
+
+  <footer class="post-footer">
+    <section class="share">
+      <div class="fb-like" data-href="http://codegizer.me/2020/04/21/lab-observer-service-registry-ver2.html" data-layout="button_count" data-action="like" data-show-faces="true" data-share="true"></div>
+      <a data-pocket-label="pocket" data-pocket-count="none" class="pocket-btn" data-lang="ko"></a>
+      
+    </section>
+  </footer>
+  <div class="read-next">
+    
+      <a class="read-next-story no-cover" href="/2020/09/14/note-oracle-collection-nested-table-return.html">
+        <section class="post">
+          <h2>오라클 함수에서 테이블 형식의 컬렉션을 리턴하기</h2>
+          <p>돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있 때를 가정해보자 건당 최대 이체 가능한...</p>
+        </section>
+      </a>
+    
+    
+      <a class="read-next-story prev no-cover" href="/2018/04/04/jekyll-toc-test.html">
+        <section class="post">
+          <h2>Jekyll Toc 테스트</h2>
+          <p>포스트 초록 내용</p>
+        </section>
+      </a>
+    
+    </div>
+  
+</article>
+
+<div id="disqus_thread"></div>
+<script>
+
+/**
+*  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+*  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
+/*
+var disqus_config = function () {
+this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://kodeujaijeoyi-gisulbeulrogeu.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+<script>
+
+  $(document).ready(function(){
+
+      //Jekyll-TOC 관련
+      //TOC을 이용하면 마크다운 파일이 HTML로 변환되면서 
+      //본문의 헤딩 태그 요소에 id값이 추가된다.
+      //<h3 id="목차1">
+
+      // post affix
+      if($('.section-nav').length) {
+          var affixList = [];            
+          $('.section-nav li a').each(function() {
+              affixList.push($(this).attr('href'));
+          });
+          
+          $(window).on('scroll', function() {
+              var scrollTop = $(window).scrollTop();
+              console.log(scrollTop);
+              // 스크롤이 풋터에 도달하면 Toc을 숨긴다.
+              if (scrollTop > 100 && scrollTop < $('.post-footer').offset().top - $(window).height() + 300) {                
+                  $('.section-nav').addClass('active');
+              } else {
+                  $('.section-nav').removeClass('active');
+              }
+
+              for (let i = 1; i < affixList.length; i++) {
+
+                    // <h3 id="목차1">
+                    // 스크롤 화면이 문서에서 헤딩요소가 위치한 곳에 
+                    // 다다르면 해당 TOC을 활성시킨다.
+                    if(scrollTop < $(affixList[i]).offset().top - 100) {
+                      var activeLi = $(".section-nav li a[href='" + affixList[i-1] + "']");
+                      if (!activeLi.hasClass('active')) {
+                          $('.section-nav li a').removeClass('active');
+                          activeLi.addClass('active');
+                      }
+                      break;
+                  }
+                  
+                  if (i == affixList.length - 1) {
+                      var activeLi = $(".section-nav li a[href='" + affixList[i] + "]");
+                      if (!activeLi.hasClass('active')) {
+                          $('.section-nav li a').removeClass('active');
+                          activeLi.addClass('active');
+                      }
+                  }
+              }
+          });
+      }
+  });
+
+</script>
+
+      </div>
+    </main>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">코드자이저&#39;s 기술 블로그</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li>
+            
+              코드자이저&#39;s 기술 블로그
+            
+            </li>
+            
+            <li><a href="mailto:codegizer.kim@gmail.com">codegizer.kim@gmail.com</a></li>
+            
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2">
+        <ul class="social-media-list">
+          
+          <li>
+            <a href="https://github.com/codegizer"><span class="icon icon--github"><svg viewBox="0 0 16 16" width="16px" height="16px"><path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/></svg>
+</span><span class="username">codegizer</span></a>
+
+          </li>
+          
+
+          
+          <li>
+            <a href="https://twitter.com/codegizer_kim"><span class="icon icon--twitter"><svg viewBox="0 0 16 16" width="16px" height="16px"><path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/></svg>
+</span><span class="username">codegizer_kim</span></a>
+
+          </li>
+          
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-3">
+        <p>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-169288078-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-169288078-1');
+</script>
+
+  </body>
+
+</html>
