@@ -1,4 +1,111 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://codegizer.me/feed.xml" rel="self" type="application/atom+xml" /><link href="http://codegizer.me/" rel="alternate" type="text/html" /><updated>2020-09-16T00:51:04+09:00</updated><id>http://codegizer.me/feed.xml</id><title type="html">코드자이저’s 기술 블로그</title><subtitle>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</subtitle><entry><title type="html">오라클 함수에서 테이블 형식의 컬렉션을 리턴하기</title><link href="http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return.html" rel="alternate" type="text/html" title="오라클 함수에서 테이블 형식의 컬렉션을 리턴하기" /><published>2020-09-14T23:00:00+09:00</published><updated>2020-09-14T23:00:00+09:00</updated><id>http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return</id><content type="html" xml:base="http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return.html">&lt;p&gt;돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있 때를 가정해보자&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://codegizer.me/feed.xml" rel="self" type="application/atom+xml" /><link href="http://codegizer.me/" rel="alternate" type="text/html" /><updated>2020-10-07T23:39:36+09:00</updated><id>http://codegizer.me/feed.xml</id><title type="html">코드자이저’s 기술 블로그</title><subtitle>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</subtitle><entry><title type="html">(오라클) 구분자로 이루어진 문자열을 행으로 변환</title><link href="http://codegizer.me/2020/10/07/note-oralce-split-text-convert-to-row.html" rel="alternate" type="text/html" title="(오라클) 구분자로 이루어진 문자열을 행으로 변환" /><published>2020-10-07T23:00:00+09:00</published><updated>2020-10-07T23:00:00+09:00</updated><id>http://codegizer.me/2020/10/07/note-oralce-split-text-convert-to-row</id><content type="html" xml:base="http://codegizer.me/2020/10/07/note-oralce-split-text-convert-to-row.html">&lt;h1 id=&quot;1-오늘의-쿼리&quot;&gt;1. 오늘의 쿼리&lt;/h1&gt;
+
+&lt;p&gt;아래는 구분자로 이루어진 문자열을 행으로 출력하는 쿼리이다.
+요번 글에서는 이 쿼리를 분석하여 이해하는 시간을 가져볼까 한다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-SQL&quot;&gt;SELECT DISTINCT REGEXP_SUBSTR(A.TXT, '[^\,]+', 1, LEVEL) MGRT_NO
+ FROM (
+        SELECT 'A1,A2,A3,A4,A5' AS TXT FROM DUAL
+  ) A
+CONNECT BY LEVEL &amp;lt;= LENGTH(REGEXP_REPLACE(A.TXT, '[^\,]+',''))+1  
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/article_images/2020-10-07-note-oralce-split-text-convert-to-row/note-main.png&quot; alt=&quot;실행결과&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h1 id=&quot;2-뜯어보기&quot;&gt;2. 뜯어보기&lt;/h1&gt;
+
+&lt;h2 id=&quot;21-connect-by&quot;&gt;2.1. CONNECT BY&lt;/h2&gt;
+
+&lt;p&gt;CONNECT BY 절을 계층적 쿼리라고 부른다. 
+일반적으로 이 절을 이용하여 상위계층와 하위계층의 관계를 행으로 표현하기 위해 사용된다.&lt;/p&gt;
+
+&lt;p&gt;그외에도 다음 같이 조건이 충족하는 동안 원하는 만큼 행을 출력할 수 있다.
+‘오늘의 쿼리’에서는 이를 활용한다.&lt;/p&gt;
+
+&lt;p&gt;“CONNECT BY [:CONDITION:]”&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;[SQL]&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;SELECT LEVEL FROM DUAL CONNECT BY LEVEL &amp;lt;= 4&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;[결과]&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/article_images/2020-10-07-note-oralce-split-text-convert-to-row/note-result-connect-by.png&quot; alt=&quot;CONNECT BY LEVEL 결과&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;22-regexp_replacea1a2a3a4a5-&quot;&gt;2.2. regexp_replace(‘A1,A2,A3,A4,A5’, ‘[^\,]+’,’’)&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;[SQL]&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-SQL&quot;&gt;SELECT regexp_replace('1,2,3,4,5', '[^\,]+','') FROM DUAL
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;[결과1]&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/article_images/2020-10-07-note-oralce-split-text-convert-to-row/note-result-regexp_replace.png&quot; alt=&quot;REGEXP_REPLCE 실행결과&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;콤마를 제외한 모든 문자를 빈문자로 치환한다.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;[결과2]&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/article_images/2020-10-07-note-oralce-split-text-convert-to-row/note-result-regexp_replace-length.png&quot; alt=&quot;REGEXP_REPLCE 실행결과&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;4개의 콤마로 문자열을 구분하고 있다.&lt;/p&gt;
+
+&lt;h2 id=&quot;23-regexp_substra1a2a3a4a5--1-5&quot;&gt;2.3. regexp_substr(‘A1,A2,A3,A4,A5’, ‘[^\,]+’, 1, 5)&lt;/h2&gt;
+
+&lt;h3 id=&quot;파라미터&quot;&gt;파라미터&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;문자소스&lt;/li&gt;
+  &lt;li&gt;정규식패턴&lt;/li&gt;
+  &lt;li&gt;N번째 발생한 패턴의 구분값에서 검색을 시작할 위치&lt;/li&gt;
+  &lt;li&gt;N번쨰 발생한 패턴의 값&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;설명&quot;&gt;설명&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;위 함수에서는 5번째 발생한 패턴의 문자 값의 1번째 위치부터 표현한다.
+결과는 다음과 같다.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;[SQL]&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-SQL&quot;&gt;SELECT regexp_substr('A1,A2,A3,A4,A5', '[^\,]+', 1, 5) FROM DUAL
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;[결과]&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/article_images/2020-10-07-note-oralce-split-text-convert-to-row/note-result-regexp_substr.png&quot; alt=&quot;REGEXP_SUBSTR 실행결과&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;5번째 발생한 패턴의 문자 값의 1번째 위치부터 표현한다.&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h1 id=&quot;3-분석최종&quot;&gt;3. 분석최종&lt;/h1&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;strong&gt;[SQL]&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-SQL&quot;&gt;SELECT DISTINCT REGEXP_SUBSTR(A.TXT, '[^\,]+', 1, LEVEL) MGRT_NO
+ FROM (
+        SELECT 'A1,A2,A3,A4,A5' AS TXT FROM DUAL
+  ) A
+CONNECT BY LEVEL &amp;lt;= LENGTH(REGEXP_REPLACE(A.TXT, '[^\,]+',''))+1    
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;이제 이걸 해석하자면 CONNECT BY의 조건절에 있는 충족하는 동안 LEVEL값은 1씩 증가하게 될 것 이고 구분자수(4개)+1 하여 총 5번 행이 반복 할 것이다.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;그리고 컬럼절에 있는 부분의 REGEXP_SUBSTR(A.TXT, ‘[^\,]+’, 1, LEVEL) 에서 LEVEL이 증가함에 따라 
+증가된 값으로 N번째 패턴 발생 값을 찾아 행으로 표현하고 결론적으로 아래와 같은 값을 가져온다.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/article_images/2020-10-07-note-oralce-split-text-convert-to-row/note-main.png&quot; alt=&quot;실행결과&quot; /&gt;&lt;/p&gt;</content><author><name></name></author><category term="개발노트" /><category term="ORACLE" /><category term="오라클" /><category term="CONNECT_BY" /><category term="문자열구분" /><category term="행변환" /><summary type="html">1. 오늘의 쿼리</summary></entry><entry><title type="html">(오라클) 테이블 형식의 컬렉션을 리턴하는 함수</title><link href="http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return.html" rel="alternate" type="text/html" title="(오라클) 테이블 형식의 컬렉션을 리턴하는 함수" /><published>2020-09-14T23:00:00+09:00</published><updated>2020-09-14T23:00:00+09:00</updated><id>http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return</id><content type="html" xml:base="http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return.html">&lt;p&gt;돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있 때를 가정해보자&lt;/p&gt;
 &lt;blockquote&gt;
   &lt;p&gt;건당 최대 이체 가능한 금액이 5천만원이다. &lt;br /&gt;
 예를 들어, 1억의 요청에 대해 두번에 걸쳐 5천만씩을 분할하여 조회가 되어야 한다.&lt;/p&gt;
@@ -70,7 +177,7 @@
 &lt;span class=&quot;k&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;TABLE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; 
 		&lt;span class=&quot;k&quot;&gt;CAST&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;F_GET_TBL_STUDY1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;파라미터값&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;TYP_TBL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
 &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content><author><name></name></author><category term="개발노트" /><category term="oracle" /><category term="object" /><category term="collection" /><category term="nested-table" /><summary type="html">돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있 때를 가정해보자 건당 최대 이체 가능한 금액이 5천만원이다. 예를 들어, 1억의 요청에 대해 두번에 걸쳐 5천만씩을 분할하여 조회가 되어야 한다.</summary></entry><entry><title type="html">옵저버 서비스 레지스트리 구현</title><link href="http://codegizer.me/2020/04/21/lab-observer-service-registry-ver2.html" rel="alternate" type="text/html" title="옵저버 서비스 레지스트리 구현" /><published>2020-04-21T23:00:00+09:00</published><updated>2020-04-21T23:00:00+09:00</updated><id>http://codegizer.me/2020/04/21/lab-observer-service-registry-ver2</id><content type="html" xml:base="http://codegizer.me/2020/04/21/lab-observer-service-registry-ver2.html">&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;연계처리 구현 적용사례에 대해 알아보기 전에 먼저 옵저버 패턴에 대해 간략하게 설명하자면 아래와 같다.&lt;/code&gt;&lt;/p&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content><author><name></name></author><category term="개발노트" /><category term="ORACEL" /><category term="오라클" /><category term="object" /><category term="collection" /><category term="nested-table" /><summary type="html">돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있 때를 가정해보자 건당 최대 이체 가능한 금액이 5천만원이다. 예를 들어, 1억의 요청에 대해 두번에 걸쳐 5천만씩을 분할하여 조회가 되어야 한다.</summary></entry><entry><title type="html">옵저버 서비스 레지스트리 구현</title><link href="http://codegizer.me/2020/04/21/lab-observer-service-registry-ver2.html" rel="alternate" type="text/html" title="옵저버 서비스 레지스트리 구현" /><published>2020-04-21T23:00:00+09:00</published><updated>2020-04-21T23:00:00+09:00</updated><id>http://codegizer.me/2020/04/21/lab-observer-service-registry-ver2</id><content type="html" xml:base="http://codegizer.me/2020/04/21/lab-observer-service-registry-ver2.html">&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;연계처리 구현 적용사례에 대해 알아보기 전에 먼저 옵저버 패턴에 대해 간략하게 설명하자면 아래와 같다.&lt;/code&gt;&lt;/p&gt;
 
 &lt;h2 id=&quot;옵저버-패턴이란&quot;&gt;옵저버 패턴이란..?&lt;/h2&gt;
 
