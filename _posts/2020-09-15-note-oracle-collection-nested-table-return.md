@@ -1,9 +1,9 @@
 ---
 layout: post
-title: 오라클 함수에서 테이블 형식의 컬렉션을 리턴하기
+title: (오라클) 테이블 형식의 컬렉션을 리턴하는 함수
 date: 2020-09-14 23:00:00 +0900
 categories: 개발노트
-tags: [oracle,object,collection,nested-table]
+tags: [ORACEL,오라클,object,collection,nested-table]
 ---
 
 돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있 때를 가정해보자
