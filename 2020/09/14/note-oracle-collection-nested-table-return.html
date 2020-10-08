@@ -7,9 +7,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>(오라클) 테이블 형식의 컬렉션을 리턴하는 함수</title>
-  <meta name="description" content="돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있 때를 가정해보자 건당 최대 이체 가능한 금액이 5천만원이다. 예를 들어, 1억의 요청에 대해 두번에 걸쳐 5천만씩을 분할하여 조회가 되어야 한다.">
+  <meta name="description" content="돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있다고 가정해보자 건당 최대 이체 가능한 금액이 5천만원이다. 예를 들어, 1억의 요청에 대해 두번에 걸처 5천만씩을 분할하여 조회가 되어야 한다.">
 
-  <link rel="stylesheet"href="/css/main.css?1602081576581339800" />
+  <link rel="stylesheet"href="/css/main.css?1602159192868979000" />
   <link rel="stylesheet" href="/assets/main.css">
   <link rel="canonical" href="http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return.html">
   <link rel="alternate" type="application/rss+xml" title="코드자이저&#39;s 기술 블로그" href="/feed.xml">
@@ -121,13 +121,13 @@
   </header>
 
   <div class="post-content" itemprop="articleBody">
-    <p>돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있 때를 가정해보자</p>
+    <p>돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있다고 가정해보자</p>
 <blockquote>
   <p>건당 최대 이체 가능한 금액이 5천만원이다. <br />
-예를 들어, 1억의 요청에 대해 두번에 걸쳐 5천만씩을 분할하여 조회가 되어야 한다.</p>
+예를 들어, 1억의 요청에 대해 두번에 걸처 5천만씩을 분할하여 조회가 되어야 한다.</p>
 </blockquote>
 
-<p>이때 다음의 방법으로 테이블을 재생성하여 리턴받아 이를 조회할 수있다.</p>
+<p>이때 다음의 테이블을 내역을 재생성하는 방법을 이용할 수 있으며 이 콜렉션을 테이블 형식을 리턴받아 조회가 가능하다.</p>
 
 <h3 id="1-객체유형-및-테이블-형식-정의">1. 객체유형 및 테이블 형식 정의</h3>
 
@@ -138,7 +138,7 @@
     <span class="err">컬럼</span><span class="mi">3</span>         <span class="n">NUMBER</span><span class="p">(</span><span class="mi">22</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span>
 <span class="p">);</span>
 
-<span class="c1">--중첩테이블 형식의 컬렉션을 생성한다.</span>
+<span class="c1">--중첩 테이블 형식의 컬렉션을 생성한다.</span>
 <span class="k">create</span> <span class="k">or</span> <span class="k">replace</span> <span class="k">TYPE</span> <span class="n">TYP_TBL</span> <span class="k">IS</span> <span class="k">TABLE</span> <span class="k">OF</span> <span class="n">TYP_OBJ</span><span class="p">;</span>
 </code></pre></div></div>
 
@@ -147,7 +147,7 @@
 <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">-- 테이블형식의 컬렉션을 리턴하는 함수</span>
 <span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">FUNCTION</span>  <span class="n">F_GET_TBL_STUDY1</span>
 <span class="p">(</span>
-    <span class="n">PARAM1</span>  <span class="n">VARCHAR2</span>
+    <span class="n">IN_PARAM1</span>  <span class="n">VARCHAR2</span>
 <span class="p">)</span>
 <span class="k">RETURN</span> <span class="n">TYP_TBL</span>
 <span class="k">IS</span>
@@ -159,7 +159,7 @@
 
 <span class="k">BEGIN</span>
 
-    <span class="k">FOR</span> <span class="n">R</span> <span class="k">IN</span> <span class="p">(</span> <span class="k">SELECT</span> <span class="n">COL1</span><span class="p">,</span><span class="n">COL2</span><span class="p">,</span><span class="n">COL3</span> <span class="k">FROM</span> <span class="k">TABLE_NAME</span><span class="p">)</span>
+    <span class="k">FOR</span> <span class="n">R</span> <span class="k">IN</span> <span class="p">(</span> <span class="k">SELECT</span> <span class="n">COL1</span><span class="p">,</span><span class="n">COL2</span><span class="p">,</span><span class="n">COL3</span> <span class="k">FROM</span> <span class="k">TABLE_NAME</span> <span class="k">WHERE</span> <span class="n">COND1</span> <span class="o">=</span> <span class="n">IN_PARAM1</span><span class="p">)</span>
     <span class="n">LOOP</span>
         
         <span class="k">BEGIN</span>
@@ -221,10 +221,8 @@
     
       <a class="read-next-story no-cover" href="/2020/10/07/note-oralce-split-text-convert-to-row.html">
         <section class="post">
-          <h2>(오라클) 구분자로 이루어진 문자열을 행으로 변환</h2>
-          <p>1. 오늘의 쿼리
-
-</p>
+          <h2>(오라클) 구분자를 사용한 문자열을 행으로 변환하기</h2>
+          <p>구분자로 이루어진 문자열을 행으로 출력하는 SQL을 분석해보려 한다. 우선 완성된 쿼리는 아래와 같으며 하나하나 뜯어보며...</p>
         </section>
       </a>
     
