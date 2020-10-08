@@ -3,7 +3,7 @@ layout: post
 title: 옵저버 서비스 레지스트리 구현
 date:   2020-04-21 23:00:00 +0900
 categories: 실험실
-tags: [design-pattern,observer-pattern]
+tags: [디자인패턴,옵저버패턴]
 ---
 
  ```연계처리 구현 적용사례에 대해 알아보기 전에 먼저 옵저버 패턴에 대해 간략하게 설명하자면 아래와 같다.```
