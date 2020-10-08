@@ -1,6 +1,37 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://codegizer.me/feed.xml" rel="self" type="application/atom+xml" /><link href="http://codegizer.me/" rel="alternate" type="text/html" /><updated>2020-10-08T21:13:12+09:00</updated><id>http://codegizer.me/feed.xml</id><title type="html">코드자이저’s 기술 블로그</title><subtitle>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</subtitle><entry><title type="html">(오라클) 구분자를 사용한 문자열을 행으로 변환하기</title><link href="http://codegizer.me/2020/10/07/note-oralce-split-text-convert-to-row.html" rel="alternate" type="text/html" title="(오라클) 구분자를 사용한 문자열을 행으로 변환하기" /><published>2020-10-07T23:00:00+09:00</published><updated>2020-10-07T23:00:00+09:00</updated><id>http://codegizer.me/2020/10/07/note-oralce-split-text-convert-to-row</id><content type="html" xml:base="http://codegizer.me/2020/10/07/note-oralce-split-text-convert-to-row.html">&lt;blockquote&gt;
-  &lt;p&gt;구분자로 이루어진 문자열을 행으로 출력하는 SQL을 분석해보려 한다. 우선 완성된 쿼리는 아래와 같으며 하나하나 뜯어보며 알아가 보자.&lt;/p&gt;
-&lt;/blockquote&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://codegizer.me/feed.xml" rel="self" type="application/atom+xml" /><link href="http://codegizer.me/" rel="alternate" type="text/html" /><updated>2020-10-08T22:01:49+09:00</updated><id>http://codegizer.me/feed.xml</id><title type="html">코드자이저’s 기술 블로그</title><entry><title type="html">(넥사크로) 효율적인 데이터셋 탐색을 위한 리팩토링</title><link href="http://codegizer.me/2020/10/08/note-nexacro-dataset-inquiry.html" rel="alternate" type="text/html" title="(넥사크로) 효율적인 데이터셋 탐색을 위한 리팩토링" /><published>2020-10-08T21:00:00+09:00</published><updated>2020-10-08T21:00:00+09:00</updated><id>http://codegizer.me/2020/10/08/note-nexacro-dataset-inquiry</id><content type="html" xml:base="http://codegizer.me/2020/10/08/note-nexacro-dataset-inquiry.html">&lt;p&gt;일반적인 경험으로는 넥사크로 환경에서 특정 체크박스로 선택된 내역만을 별도의 데이터셋에 담아 저장 이나 삭제 등의 트랜잭션 요청을 하는 일이 빈번했다. 그리고 이 체크박스가 선택된 것만을 골라내기 위해서 FOR문으로 반복하고 체크박스가 체크되었는지의 대부분의 로직에 공통적으로 적용되고 있다는 것을 깨달았다.&lt;/p&gt;
+
+&lt;p&gt;그래서 특정 조건에 대한 탐색을 수행하고 해당 ROW의 처리를 콜백함수를 요청하도록 하여 코드를 효율적으로 리팩토리할 수 있었다.&lt;/p&gt;
+
+&lt;p&gt;아래는 그 예시를 담은 코드이다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-JS&quot;&gt;//체크박스가 선택된 조건의 목록을 찾아 콜백에 처리를 위임한다.
+function loopByChk(Dataset dataset, Function callback)
+{
+    var nRow = -1;
+
+    while( nRow = ds.findRowExpr(&quot;CHK==1&quot;, nRow) &amp;gt;= 0)
+    {
+            calback(dataset, nRow);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;위의 코드에서는 데이터셋의 findRowExpr 함수를 이용해 특정 위치부터 조건에 해당하는 ROW 정보를 사용자가 지정한 콜백함수에 처리를 위임한다.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/article_images/2020-10-08-note-nexacro-dataset-inquiry/nexacro-reference-dataset-findRowExpr.png&quot; alt=&quot;findRowExpr&quot; /&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-JS&quot;&gt;
+//목록에서 체크박스가 선택 된 것의 순번을 배열에 담는다.
+function fnSave()
+{
+	var arrTarget = [];
+
+	loopByChk(dataset, function(dataset, nRow) {
+		arrTarget.push(nRow);
+	});
+        
+    trace(arrTarget);
+}
+&lt;/code&gt;&lt;/pre&gt;</content><author><name></name></author><category term="개발노트" /><category term="넥사크로" /><category term="데이터셋" /><category term="탐색" /><category term="알고리즘" /><category term="콜백" /><category term="리팩토링" /><summary type="html">일반적인 경험으로는 넥사크로 환경에서 특정 체크박스로 선택된 내역만을 별도의 데이터셋에 담아 저장 이나 삭제 등의 트랜잭션 요청을 하는 일이 빈번했다. 그리고 이 체크박스가 선택된 것만을 골라내기 위해서 FOR문으로 반복하고 체크박스가 체크되었는지의 대부분의 로직에 공통적으로 적용되고 있다는 것을 깨달았다.</summary></entry><entry><title type="html">(오라클) 구분자를 사용한 문자열을 행으로 변환하기</title><link href="http://codegizer.me/2020/10/07/note-oralce-split-text-convert-to-row.html" rel="alternate" type="text/html" title="(오라클) 구분자를 사용한 문자열을 행으로 변환하기" /><published>2020-10-07T23:00:00+09:00</published><updated>2020-10-07T23:00:00+09:00</updated><id>http://codegizer.me/2020/10/07/note-oralce-split-text-convert-to-row</id><content type="html" xml:base="http://codegizer.me/2020/10/07/note-oralce-split-text-convert-to-row.html">&lt;p&gt;구분자로 이루어진 문자열을 행으로 출력하는 SQL을 분석해보려 한다. 우선 완성된 쿼리는 아래와 같으며 하나하나 뜯어보며 알아가 보자.&lt;/p&gt;
 
 &lt;pre&gt;&lt;code class=&quot;language-SQL&quot;&gt;SELECT LEVEL, REGEXP_SUBSTR(A.TXT, '[^\,]+', 1, LEVEL) MGRT_NO
  FROM (
@@ -102,7 +133,7 @@ CONNECT BY LEVEL &amp;lt;= LENGTH(REGEXP_REPLACE(A.TXT, '[^\,]+',''))+1
   &lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;p&gt;&lt;img src=&quot;/assets/article_images/2020-10-07-note-oralce-split-text-convert-to-row/note-main.png&quot; alt=&quot;실행결과&quot; /&gt;&lt;/p&gt;</content><author><name></name></author><category term="개발노트" /><category term="ORACLE" /><category term="오라클" /><category term="CONNECT_BY" /><category term="문자열구분" /><category term="행변환" /><summary type="html">구분자로 이루어진 문자열을 행으로 출력하는 SQL을 분석해보려 한다. 우선 완성된 쿼리는 아래와 같으며 하나하나 뜯어보며 알아가 보자.</summary></entry><entry><title type="html">(오라클) 테이블 형식의 컬렉션을 리턴하는 함수</title><link href="http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return.html" rel="alternate" type="text/html" title="(오라클) 테이블 형식의 컬렉션을 리턴하는 함수" /><published>2020-09-14T23:00:00+09:00</published><updated>2020-09-14T23:00:00+09:00</updated><id>http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return</id><content type="html" xml:base="http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return.html">&lt;p&gt;돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있다고 가정해보자&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/assets/article_images/2020-10-07-note-oralce-split-text-convert-to-row/note-main.png&quot; alt=&quot;실행결과&quot; /&gt;&lt;/p&gt;</content><author><name></name></author><category term="개발노트" /><category term="오라클" /><category term="문자열구분" /><category term="CONNECT_BY" /><category term="행변환" /><summary type="html">구분자로 이루어진 문자열을 행으로 출력하는 SQL을 분석해보려 한다. 우선 완성된 쿼리는 아래와 같으며 하나하나 뜯어보며 알아가 보자.</summary></entry><entry><title type="html">(오라클) 테이블 형식의 컬렉션을 리턴하는 함수</title><link href="http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return.html" rel="alternate" type="text/html" title="(오라클) 테이블 형식의 컬렉션을 리턴하는 함수" /><published>2020-09-14T23:00:00+09:00</published><updated>2020-09-14T23:00:00+09:00</updated><id>http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return</id><content type="html" xml:base="http://codegizer.me/2020/09/14/note-oracle-collection-nested-table-return.html">&lt;p&gt;돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있다고 가정해보자&lt;/p&gt;
 &lt;blockquote&gt;
   &lt;p&gt;건당 최대 이체 가능한 금액이 5천만원이다. &lt;br /&gt;
 예를 들어, 1억의 요청에 대해 두번에 걸처 5천만씩을 분할하여 조회가 되어야 한다.&lt;/p&gt;
@@ -174,7 +205,7 @@ CONNECT BY LEVEL &amp;lt;= LENGTH(REGEXP_REPLACE(A.TXT, '[^\,]+',''))+1
 &lt;span class=&quot;k&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;TABLE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; 
 		&lt;span class=&quot;k&quot;&gt;CAST&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;F_GET_TBL_STUDY1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;파라미터값&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;TYP_TBL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
 &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content><author><name></name></author><category term="개발노트" /><category term="ORACEL" /><category term="오라클" /><category term="object" /><category term="collection" /><category term="nested-table" /><summary type="html">돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있다고 가정해보자 건당 최대 이체 가능한 금액이 5천만원이다. 예를 들어, 1억의 요청에 대해 두번에 걸처 5천만씩을 분할하여 조회가 되어야 한다.</summary></entry><entry><title type="html">옵저버 서비스 레지스트리 구현</title><link href="http://codegizer.me/2020/04/21/lab-observer-service-registry-ver2.html" rel="alternate" type="text/html" title="옵저버 서비스 레지스트리 구현" /><published>2020-04-21T23:00:00+09:00</published><updated>2020-04-21T23:00:00+09:00</updated><id>http://codegizer.me/2020/04/21/lab-observer-service-registry-ver2</id><content type="html" xml:base="http://codegizer.me/2020/04/21/lab-observer-service-registry-ver2.html">&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;연계처리 구현 적용사례에 대해 알아보기 전에 먼저 옵저버 패턴에 대해 간략하게 설명하자면 아래와 같다.&lt;/code&gt;&lt;/p&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content><author><name></name></author><category term="개발노트" /><category term="오라클" /><category term="객체" /><category term="중첩테이블" /><category term="콜렉션" /><summary type="html">돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있다고 가정해보자 건당 최대 이체 가능한 금액이 5천만원이다. 예를 들어, 1억의 요청에 대해 두번에 걸처 5천만씩을 분할하여 조회가 되어야 한다.</summary></entry><entry><title type="html">옵저버 서비스 레지스트리 구현</title><link href="http://codegizer.me/2020/04/21/lab-observer-service-registry-ver2.html" rel="alternate" type="text/html" title="옵저버 서비스 레지스트리 구현" /><published>2020-04-21T23:00:00+09:00</published><updated>2020-04-21T23:00:00+09:00</updated><id>http://codegizer.me/2020/04/21/lab-observer-service-registry-ver2</id><content type="html" xml:base="http://codegizer.me/2020/04/21/lab-observer-service-registry-ver2.html">&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;연계처리 구현 적용사례에 대해 알아보기 전에 먼저 옵저버 패턴에 대해 간략하게 설명하자면 아래와 같다.&lt;/code&gt;&lt;/p&gt;
 
 &lt;h2 id=&quot;옵저버-패턴이란&quot;&gt;옵저버 패턴이란..?&lt;/h2&gt;
 
@@ -536,4 +567,4 @@ CONNECT BY LEVEL &amp;lt;= LENGTH(REGEXP_REPLACE(A.TXT, '[^\,]+',''))+1
 
 &lt;h2 id=&quot;감사합니다&quot;&gt;감사합니다!!&lt;/h2&gt;
 
-&lt;p&gt;이번 프로젝트를 함께한 참여사 및 동료들에게 감사의 뜻을 전한다. 혼자 보다는 여럿이가 더 의미있고 진중한 시간을 보낼 수 있음을 다시한번 확인할 수 있었다.&lt;/p&gt;</content><author><name></name></author><category term="실험실" /><category term="design-pattern" /><category term="observer-pattern" /><summary type="html">연계처리 구현 적용사례에 대해 알아보기 전에 먼저 옵저버 패턴에 대해 간략하게 설명하자면 아래와 같다. 옵저버 패턴이란..?</summary></entry></feed>
+&lt;p&gt;이번 프로젝트를 함께한 참여사 및 동료들에게 감사의 뜻을 전한다. 혼자 보다는 여럿이가 더 의미있고 진중한 시간을 보낼 수 있음을 다시한번 확인할 수 있었다.&lt;/p&gt;</content><author><name></name></author><category term="실험실" /><category term="디자인패턴" /><category term="옵저버패턴" /><summary type="html">연계처리 구현 적용사례에 대해 알아보기 전에 먼저 옵저버 패턴에 대해 간략하게 설명하자면 아래와 같다. 옵저버 패턴이란..?</summary></entry></feed>

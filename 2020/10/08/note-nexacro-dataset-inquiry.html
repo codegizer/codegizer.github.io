@@ -6,12 +6,12 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>(오라클) 구분자를 사용한 문자열을 행으로 변환하기</title>
-  <meta name="description" content="구분자로 이루어진 문자열을 행으로 출력하는 SQL을 분석해보려 한다. 우선 완성된 쿼리는 아래와 같으며 하나하나 뜯어보며 알아가 보자.">
+  <title>(넥사크로) 효율적인 데이터셋 탐색을 위한  리팩토링</title>
+  <meta name="description" content="일반적인 경험으로는 넥사크로 환경에서 특정 체크박스로 선택된 내역만을 별도의 데이터셋에 담아 저장 이나 삭제 등의 트랜잭션 요청을 하는 일이 빈번했다. 그리고 이 체크박스가 선택된 것만을 골라내기 위해서 FOR문으로 반복하고 체크박스가 체크되었는지의 대부분의 로직에 공통적으로 적용...">
 
   <link rel="stylesheet"href="/css/main.css?1602162109011216900" />
   <link rel="stylesheet" href="/assets/main.css">
-  <link rel="canonical" href="http://codegizer.me/2020/10/07/note-oralce-split-text-convert-to-row.html">
+  <link rel="canonical" href="http://codegizer.me/2020/10/08/note-nexacro-dataset-inquiry.html">
   <link rel="alternate" type="application/rss+xml" title="코드자이저&#39;s 기술 블로그" href="/feed.xml">
   
   
@@ -111,176 +111,83 @@
         <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
 
   <header class="post-header">
-    <h1 class="post-title" itemprop="name headline">(오라클) 구분자를 사용한 문자열을 행으로 변환하기</h1>
+    <h1 class="post-title" itemprop="name headline">(넥사크로) 효율적인 데이터셋 탐색을 위한  리팩토링</h1>
     <p class="post-meta">
-      <time datetime="2020-10-07T23:00:00+09:00" itemprop="datePublished">
+      <time datetime="2020-10-08T21:00:00+09:00" itemprop="datePublished">
         
-        Oct 7, 2020
+        Oct 8, 2020
       </time>
       </p>
   </header>
 
   <div class="post-content" itemprop="articleBody">
     <ul class="section-nav">
-<li class="toc-entry toc-h1"><a href="#2-뜯어보기">2. 뜯어보기</a>
-<ul>
-<li class="toc-entry toc-h2"><a href="#21-connect-by">2.1. CONNECT BY</a></li>
-<li class="toc-entry toc-h2"><a href="#22-regexp_replacea1a2a3a4a5-">2.2. regexp_replace(‘A1,A2,A3,A4,A5’, ‘[^\,]+’,’’)</a></li>
-<li class="toc-entry toc-h2"><a href="#23-regexp_substra1a2a3a4a5--1-5">2.3. regexp_substr(‘A1,A2,A3,A4,A5’, ‘[^\,]+’, 1, 5)</a>
-<ul>
-<li class="toc-entry toc-h3"><a href="#파라미터">파라미터</a></li>
-<li class="toc-entry toc-h3"><a href="#설명">설명</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toc-entry toc-h1"><a href="#3-종합하여-분석해보자">3. 종합하여 분석해보자</a></li>
-</ul><p>구분자로 이루어진 문자열을 행으로 출력하는 SQL을 분석해보려 한다. 우선 완성된 쿼리는 아래와 같으며 하나하나 뜯어보며 알아가 보자.</p>
+</ul><p>일반적인 경험으로는 넥사크로 환경에서 특정 체크박스로 선택된 내역만을 별도의 데이터셋에 담아 저장 이나 삭제 등의 트랜잭션 요청을 하는 일이 빈번했다. 그리고 이 체크박스가 선택된 것만을 골라내기 위해서 FOR문으로 반복하고 체크박스가 체크되었는지의 대부분의 로직에 공통적으로 적용되고 있다는 것을 깨달았다.</p>
 
-<pre><code class="language-SQL">SELECT LEVEL, REGEXP_SUBSTR(A.TXT, '[^\,]+', 1, LEVEL) MGRT_NO
- FROM (
-        SELECT 'A1,A2,A3,A4,A5' AS TXT FROM DUAL
-  ) A
-CONNECT BY LEVEL &lt;= LENGTH(REGEXP_REPLACE(A.TXT, '[^\,]+',''))+1 
+<p>그래서 특정 조건에 대한 탐색을 수행하고 해당 ROW의 처리를 콜백함수를 요청하도록 하여 코드를 효율적으로 리팩토리할 수 있었다.</p>
+
+<p>아래는 그 예시를 담은 코드이다.</p>
+
+<pre><code class="language-JS">//체크박스가 선택된 조건의 목록을 찾아 콜백에 처리를 위임한다.
+function loopByChk(Dataset dataset, Function callback)
+{
+    var nRow = -1;
+
+    while( nRow = ds.findRowExpr("CHK==1", nRow) &gt;= 0)
+    {
+            calback(dataset, nRow);
+    }
+}
 </code></pre>
+<p>위의 코드에서는 데이터셋의 findRowExpr 함수를 이용해 특정 위치부터 조건에 해당하는 ROW 정보를 사용자가 지정한 콜백함수에 처리를 위임한다.</p>
 
-<p><img src="/assets/article_images/2020-10-07-note-oralce-split-text-convert-to-row/note-main.png" alt="실행결과"></p>
+<p><img src="/assets/article_images/2020-10-08-note-nexacro-dataset-inquiry/nexacro-reference-dataset-findRowExpr.png" alt="findRowExpr"></p>
 
-<p><br></p>
+<pre><code class="language-JS">
+//목록에서 체크박스가 선택 된 것의 순번을 배열에 담는다.
+function fnSave()
+{
+	var arrTarget = [];
 
-<h1 id="2-뜯어보기">
-<a class="anchor" href="#2-%EB%9C%AF%EC%96%B4%EB%B3%B4%EA%B8%B0" aria-hidden="true"><span class="octicon octicon-link"></span></a>2. 뜯어보기</h1>
-
-<h2 id="21-connect-by">
-<a class="anchor" href="#21-connect-by" aria-hidden="true"><span class="octicon octicon-link"></span></a>2.1. CONNECT BY</h2>
-
-<p>CONNECT BY 절을 계층적 쿼리라고 부른다. 
-일반적으로 이 절을 이용하여 상위계층와 하위계층의 관계를 행으로 표현하기 위해 사용된다.</p>
-
-<p>그외에도 다음 같이 조건이 충족하는 동안 원하는 만큼 행을 출력하는 것도 가능하며, <u>지금 살펴보는 쿼리도 이를 이용한다.</u></p>
-
-<p>“CONNECT BY [:CONDITION:]”</p>
-
-<p><strong>[SQL]</strong></p>
-
-<pre><code class="language-SQL"> SELECT LEVEL FROM DUAL CONNECT BY LEVEL &lt;= 4
+	loopByChk(dataset, function(dataset, nRow) {
+		arrTarget.push(nRow);
+	});
+        
+    trace(arrTarget);
+}
 </code></pre>
-
-<p><strong>[결과]</strong></p>
-
-<p><img src="/assets/article_images/2020-10-07-note-oralce-split-text-convert-to-row/note-result-connect-by.png" alt="CONNECT BY LEVEL 결과"></p>
-
-<h2 id="22-regexp_replacea1a2a3a4a5-">
-<a class="anchor" href="#22-regexp_replacea1a2a3a4a5-" aria-hidden="true"><span class="octicon octicon-link"></span></a>2.2. regexp_replace(‘A1,A2,A3,A4,A5’, ‘[^\,]+’,’’)</h2>
-
-<p><strong>[SQL]</strong></p>
-<pre><code class="language-SQL">SELECT regexp_replace('A1,A2,A3,A4,A5', '[^\,]+','') FROM DUAL
-</code></pre>
-
-<p><strong>[결과1]</strong></p>
-
-<p><img src="/assets/article_images/2020-10-07-note-oralce-split-text-convert-to-row/note-result-regexp_replace.png" alt="REGEXP_REPLCE 실행결과"></p>
-
-<p>콤마를 제외한 모든 문자를 빈문자로 치환한다.</p>
-
-<p><strong>[결과2]</strong></p>
-
-<p><img src="/assets/article_images/2020-10-07-note-oralce-split-text-convert-to-row/note-result-regexp_replace-length.png" alt="REGEXP_REPLCE 실행결과"></p>
-
-<p>4개의 콤마로 문자열을 구분하고 있다.</p>
-
-<h2 id="23-regexp_substra1a2a3a4a5--1-5">
-<a class="anchor" href="#23-regexp_substra1a2a3a4a5--1-5" aria-hidden="true"><span class="octicon octicon-link"></span></a>2.3. regexp_substr(‘A1,A2,A3,A4,A5’, ‘[^\,]+’, 1, 5)</h2>
-
-<h3 id="파라미터">
-<a class="anchor" href="#%ED%8C%8C%EB%9D%BC%EB%AF%B8%ED%84%B0" aria-hidden="true"><span class="octicon octicon-link"></span></a>파라미터</h3>
-
-<ul>
-  <li>문자소스</li>
-  <li>정규식패턴</li>
-  <li>N번째 발생한 패턴의 구분값에서 검색을 시작할 위치</li>
-  <li>N번쨰 발생한 패턴의 값</li>
-</ul>
-
-<h3 id="설명">
-<a class="anchor" href="#%EC%84%A4%EB%AA%85" aria-hidden="true"><span class="octicon octicon-link"></span></a>설명</h3>
-<ul>
-  <li>위 함수에서는 5번째 발생한 패턴의 문자 값의 1번째 위치부터 표현한다.
-결과는 다음과 같다.</li>
-</ul>
-
-<p><strong>[SQL]</strong></p>
-
-<pre><code class="language-SQL">SELECT regexp_substr('A1,A2,A3,A4,A5', '[^\,]+', 1, 5) FROM DUAL
-</code></pre>
-
-<p><strong>[결과]</strong></p>
-
-<p><img src="/assets/article_images/2020-10-07-note-oralce-split-text-convert-to-row/note-result-regexp_substr.png" alt="REGEXP_SUBSTR 실행결과"></p>
-
-<p>5번째 발생한 패턴의 문자 값의 1번째 위치부터 표현한다.</p>
-
-<p><br></p>
-
-<h1 id="3-종합하여-분석해보자">
-<a class="anchor" href="#3-%EC%A2%85%ED%95%A9%ED%95%98%EC%97%AC-%EB%B6%84%EC%84%9D%ED%95%B4%EB%B3%B4%EC%9E%90" aria-hidden="true"><span class="octicon octicon-link"></span></a>3. 종합하여 분석해보자</h1>
-
-<p><strong>[SQL]</strong></p>
-
-<pre><code class="language-SQL">SELECT LEVEL, REGEXP_SUBSTR(A.TXT, '[^\,]+', 1, LEVEL) MGRT_NO
- FROM (
-        SELECT 'A1,A2,A3,A4,A5' AS TXT FROM DUAL
-  ) A
-CONNECT BY LEVEL &lt;= LENGTH(REGEXP_REPLACE(A.TXT, '[^\,]+',''))+1    
-</code></pre>
-
-<ul>
-  <li>
-    <p>이제 이걸 해석하자면 CONNECT BY의 조건절에 있는 충족하는 동안 LEVEL값은 1씩 증가하게 될 것 이고 구분자수(4개)+1 하여 총 5번 행이 반복 할 것이다.</p>
-  </li>
-  <li>
-    <p>그리고 컬럼절에 있는 부분의 REGEXP_SUBSTR(A.TXT, ‘[^\,]+’, 1, LEVEL) 에서 LEVEL이 증가함에 따라 
-증가된 값에 해당하는 N번째 패턴이 발생한 값을 찾아 행으로 출력한다.</p>
-  </li>
-</ul>
-
-<p><img src="/assets/article_images/2020-10-07-note-oralce-split-text-convert-to-row/note-main.png" alt="실행결과"></p>
-
 
     <p class="tags">
       
-        <a href="/tags#오라클-ref">오라클</a>
+        <a href="/tags#넥사크로-ref">넥사크로</a>
       
-        <a href="/tags#문자열구분-ref">문자열구분</a>
+        <a href="/tags#데이터셋-ref">데이터셋</a>
       
-        <a href="/tags#connect-by-ref">CONNECT_BY</a>
+        <a href="/tags#탐색-ref">탐색</a>
       
-        <a href="/tags#행변환-ref">행변환</a>
+        <a href="/tags#알고리즘-ref">알고리즘</a>
+      
+        <a href="/tags#콜백-ref">콜백</a>
+      
+        <a href="/tags#리팩토링-ref">리팩토링</a>
       
     </p>
   </div>
 
   <footer class="post-footer">
     <section class="share">
-      <div class="fb-like" data-href="http://codegizer.me/2020/10/07/note-oralce-split-text-convert-to-row.html" data-layout="button_count" data-action="like" data-show-faces="true" data-share="true"></div>
+      <div class="fb-like" data-href="http://codegizer.me/2020/10/08/note-nexacro-dataset-inquiry.html" data-layout="button_count" data-action="like" data-show-faces="true" data-share="true"></div>
       <a data-pocket-label="pocket" data-pocket-count="none" class="pocket-btn" data-lang="ko"></a>
       
     </section>
   </footer>
   <div class="read-next">
     
-      <a class="read-next-story no-cover" href="/2020/10/08/note-nexacro-dataset-inquiry.html">
-        <section class="post">
-          <h2>(넥사크로) 효율적인 데이터셋 탐색을 위한  리팩토링</h2>
-          <p>일반적인 경험으로는 넥사크로 환경에서 특정 체크박스로 선택된 내역만을 별도의 데이터셋에 담아 저장 이나 삭제 등의...</p>
-        </section>
-      </a>
     
-    
-      <a class="read-next-story prev no-cover" href="/2020/09/14/note-oracle-collection-nested-table-return.html">
+      <a class="read-next-story prev no-cover" href="/2020/10/07/note-oralce-split-text-convert-to-row.html">
         <section class="post">
-          <h2>(오라클) 테이블 형식의 컬렉션을 리턴하는 함수</h2>
-          <p>돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있다고 가정해보자 건당 최대 이체 가능한 금액이...</p>
+          <h2>(오라클) 구분자를 사용한 문자열을 행으로 변환하기</h2>
+          <p>구분자로 이루어진 문자열을 행으로 출력하는 SQL을 분석해보려 한다. 우선 완성된 쿼리는 아래와 같으며 하나하나 뜯어보며...</p>
         </section>
       </a>
     
