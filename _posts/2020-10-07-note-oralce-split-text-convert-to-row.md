@@ -3,10 +3,10 @@ layout: post
 title: (오라클) 구분자를 사용한 문자열을 행으로 변환하기
 date: 2020-10-07 23:00:00 +0900
 categories: 개발노트
-tags: [ORACLE,오라클,CONNECT_BY,문자열구분,행변환]
+tags: [오라클,문자열구분,CONNECT_BY,행변환]
 toc: true
 ---
-> 구분자로 이루어진 문자열을 행으로 출력하는 SQL을 분석해보려 한다. 우선 완성된 쿼리는 아래와 같으며 하나하나 뜯어보며 알아가 보자.
+구분자로 이루어진 문자열을 행으로 출력하는 SQL을 분석해보려 한다. 우선 완성된 쿼리는 아래와 같으며 하나하나 뜯어보며 알아가 보자.
 
 ```SQL
 SELECT LEVEL, REGEXP_SUBSTR(A.TXT, '[^\,]+', 1, LEVEL) MGRT_NO
