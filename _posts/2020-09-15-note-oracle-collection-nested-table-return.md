@@ -6,11 +6,11 @@ categories: 개발노트
 tags: [ORACEL,오라클,object,collection,nested-table]
 ---
 
-돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있 때를 가정해보자
+돈을 계좌로 송금을 요청할 때 아래의 같은 제한이 있다고 가정해보자
 > 건당 최대 이체 가능한 금액이 5천만원이다. <br/>
-예를 들어, 1억의 요청에 대해 두번에 걸쳐 5천만씩을 분할하여 조회가 되어야 한다.
+예를 들어, 1억의 요청에 대해 두번에 걸처 5천만씩을 분할하여 조회가 되어야 한다.
 
-이때 다음의 방법으로 테이블을 재생성하여 리턴받아 이를 조회할 수있다.
+이때 다음의 테이블을 내역을 재생성하는 방법을 이용할 수 있으며 이 콜렉션을 테이블 형식을 리턴받아 조회가 가능하다.
 
 
 ### 1. 객체유형 및 테이블 형식 정의
@@ -23,7 +23,7 @@ CREATE OR REPLACE TYPE TYP_OBJ IS OBJECT (
     컬럼3         NUMBER(22,0),
 );
 
---중첩테이블 형식의 컬렉션을 생성한다.
+--중첩 테이블 형식의 컬렉션을 생성한다.
 create or replace TYPE TYP_TBL IS TABLE OF TYP_OBJ;
 ```
 
@@ -33,7 +33,7 @@ create or replace TYPE TYP_TBL IS TABLE OF TYP_OBJ;
 -- 테이블형식의 컬렉션을 리턴하는 함수
 CREATE OR REPLACE FUNCTION  F_GET_TBL_STUDY1
 (
-    PARAM1  VARCHAR2
+    IN_PARAM1  VARCHAR2
 )
 RETURN TYP_TBL
 IS
@@ -45,7 +45,7 @@ IS
 
 BEGIN
 
-    FOR R IN ( SELECT COL1,COL2,COL3 FROM TABLE_NAME)
+    FOR R IN ( SELECT COL1,COL2,COL3 FROM TABLE_NAME WHERE COND1 = IN_PARAM1)
     LOOP
         
         BEGIN
