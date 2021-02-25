@@ -1,4 +1,184 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://codegizer.me/feed.xml" rel="self" type="application/atom+xml" /><link href="http://codegizer.me/" rel="alternate" type="text/html" /><updated>2020-10-08T22:01:49+09:00</updated><id>http://codegizer.me/feed.xml</id><title type="html">코드자이저’s 기술 블로그</title><entry><title type="html">(넥사크로) 효율적인 데이터셋 탐색을 위한 리팩토링</title><link href="http://codegizer.me/2020/10/08/note-nexacro-dataset-inquiry.html" rel="alternate" type="text/html" title="(넥사크로) 효율적인 데이터셋 탐색을 위한 리팩토링" /><published>2020-10-08T21:00:00+09:00</published><updated>2020-10-08T21:00:00+09:00</updated><id>http://codegizer.me/2020/10/08/note-nexacro-dataset-inquiry</id><content type="html" xml:base="http://codegizer.me/2020/10/08/note-nexacro-dataset-inquiry.html">&lt;p&gt;일반적인 경험으로는 넥사크로 환경에서 특정 체크박스로 선택된 내역만을 별도의 데이터셋에 담아 저장 이나 삭제 등의 트랜잭션 요청을 하는 일이 빈번했다. 그리고 이 체크박스가 선택된 것만을 골라내기 위해서 FOR문으로 반복하고 체크박스가 체크되었는지의 대부분의 로직에 공통적으로 적용되고 있다는 것을 깨달았다.&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://codegizer.me/feed.xml" rel="self" type="application/atom+xml" /><link href="http://codegizer.me/" rel="alternate" type="text/html" /><updated>2021-02-25T21:56:07+09:00</updated><id>http://codegizer.me/feed.xml</id><title type="html">코드자이저’s 기술 블로그</title><entry><title type="html">(오라클) 건당 이체한도에 따른 송금분할 예제</title><link href="http://codegizer.me/2021/02/25/note-oracle-example-remitt-split.html" rel="alternate" type="text/html" title="(오라클) 건당 이체한도에 따른 송금분할 예제" /><published>2021-02-25T21:45:00+09:00</published><updated>2021-02-25T21:45:00+09:00</updated><id>http://codegizer.me/2021/02/25/note-oracle-example-remitt-split</id><content type="html" xml:base="http://codegizer.me/2021/02/25/note-oracle-example-remitt-split.html">&lt;p&gt;이전에 테이블 유형의 컬렉션을 다루는 방법와 콤마로 이루어진 문자열을 행으로 변환하는 내용을 정리하여 공유했었다. 이번에는 그 최종 결정체인 건당 이체한도에 따라서 송금액을 분할하는 예제를 다루보겠다.&lt;/p&gt;
+
+&lt;h2 id=&quot;1-우선-예제에-사용될-db테이블와-데이터를-아래와-같이-생성해-보자&quot;&gt;1. 우선 예제에 사용될 DB테이블와 데이터를 아래와 같이 생성해 보자.&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&quot;language-SQL&quot;&gt;CREATE TABLE REMIT_REQUST (
+	MGRT_NO		NUMBER(10,0),    
+	DPSTR_NM 	VARCHAR2(50),
+	BANK_NM		VARCHAR2(50),
+	ACCNO		VARCHAR2(50),
+	REQUST_AMT	NUMBER(10,0)
+);
+
+INSERT INTO REMIT_REQUST (MGRT_NO, DPSTR_NM, BANK_NM, ACCNO, REQUST_AMT) VALUES ( 1, '예금주1','한국은행1','111-111-111',5000000);
+INSERT INTO REMIT_REQUST (MGRT_NO, DPSTR_NM, BANK_NM, ACCNO, REQUST_AMT) VALUES ( 2, '예금주2','한국은행2','222-222-222',2500000);
+INSERT INTO REMIT_REQUST (MGRT_NO, DPSTR_NM, BANK_NM, ACCNO, REQUST_AMT) VALUES ( 3, '예금주3','한국은행3','333-333-333',2500000);
+INSERT INTO REMIT_REQUST (MGRT_NO, DPSTR_NM, BANK_NM, ACCNO, REQUST_AMT) VALUES ( 4, '예금주4','한국은행4','444-444-444',15000000);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;2-객체유형와-테이블-컬렉션-생성&quot;&gt;2. 객체유형와 테이블 컬렉션 생성&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-SQL&quot;&gt;--객체유형 생성
+create or replace TYPE REMIT_OBJ IS OBJECT (
+	MGRT_NO		NUMBER(10,0),    
+	DPSTR_NM 	VARCHAR2(50),
+	BANK_NM		VARCHAR2(50),
+	ACCNO		VARCHAR2(50),
+	REQUST_AMT	NUMBER(10,0)
+);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-SQL&quot;&gt;-- 테이블 컬렉션 생성
+create or replace TYPE REMIT_TBL IS TABLE OF REMIT_OBJ;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;3-이체한도에-따라서-송금액을-분할하여-컬렉션을-리턴하는-함수-생성&quot;&gt;3. 이체한도에 따라서 송금액을 분할하여 컬렉션을 리턴하는 함수 생성&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-SQL&quot;&gt;CREATE OR REPLACE FUNCTION   F_REMIT_TBL_RET
+(
+	IN_MGRT_KEYS VARCHAR2
+)
+RETURN REMIT_TBL
+IS
+	L_REMIT_TBL REMIT_TBL:=REMIT_TBL();
+	V_REMIT_DIVID_CNT NUMBER(22,0);
+	V_REMIT_DIVID_AMT NUMBER(22,0);
+	V_REMIT_SUMT_AMT NUMBER(22,0);
+	V_REMIT_DIVID_MOD NUMBER(22,0);
+	V_SET_DIVID_AMT NUMBER(22,0) := 5000000;	--이체한도
+	V_N NUMBER(22,0) := 0;
+	V_PRSS_CNT NUMBER(22,0) :=0;
+	rc sys_refcursor;
+BEGIN
+
+--이체처리를 할 내역의 관리번호를 콤마로 결합된 문자열을 전달하면
+--행으로 변환하여 IN 절을 이용하여 송금요청 테이블을 조회한다.
+FOR R IN (
+    SELECT  AA.MGRT_NO
+			, AA.DPSTR_NM
+            , AA.BANK_NM
+            , AA.ACCNO
+            , AA.REQUST_AMT
+      FROM REMIT_REQUST AA
+INNER JOIN (
+
+            SELECT distinct regexp_substr(IN_MGRT_KEYS, '[^\\\\\\\\,]+', 1, LEVEL) MGRT_NO
+                FROM DUAL
+            CONNECT BY LEVEL &amp;lt;= length(regexp_replace(IN_MGRT_KEYS, '[^\\\\\\\\,]+',''))+1                         
+      ) TBL_MGRT
+      ON AA.MGRT_NO = TBL_MGRT.MGRT_NO	
+
+)
+
+--이체처리 요청내역을 커서를 이용해 루프를 돌린다.
+LOOP
+
+	BEGIN
+	
+	  --송금액이 이체한도를 초과 하는 경우
+	  IF R.REQUST_AMT &amp;gt; V_SET_DIVID_AMT THEN
+	
+	    V_REMIT_DIVID_MOD := R.REQUST_AMT MOD V_SET_DIVID_AMT;
+
+		--이체한도에 따른 분할되는 이체 건수
+	    V_REMIT_DIVID_CNT := CEIL(R.REQUST_AMT / V_SET_DIVID_AMT);
+
+		--처리건수 카운트 초기화
+	    V_PRSS_CNT := 0;
+	
+	    LOOP
+			--컬렉션을 확장한다.	    
+	    	L_REMIT_TBL.EXTEND;
+
+			--컬렉션 확장에 따른 인덱스 증가
+	    	V_N := V_N+1;
+
+			-- 처리건수 카운트 '1' 증가
+	    	V_PRSS_CNT := V_PRSS_CNT + 1;				
+
+			-- 마지막 분할 건
+	    	IF V_PRSS_CNT = V_REMIT_DIVID_CNT THEN
+				
+				--이체한도로 나누었을 때 나머지가 0인경우(분할 금액이 모두 동일한경우)
+				IF V_REMIT_DIVID_MOD = 0 THEN
+					-- 마지막 불한 송금액은 이체한도액이 된다.
+					V_REMIT_DIVID_AMT := V_SET_DIVID_AMT;
+				ELSE
+					--나머지가 0으로 나누어 떨어지지 않는 경우
+					--나머지 금액을 마지막 송금액으로 한다.
+			        V_REMIT_DIVID_AMT := V_REMIT_DIVID_MOD;
+				END IF;
+
+	    	ELSE
+
+				--송금액을 이체한도 만큼으로 분할한다.
+	    		V_REMIT_DIVID_AMT := V_SET_DIVID_AMT;
+
+	    	END IF;
+
+			-- 테이블 컬렉션에 분할된 금액을 담는다.
+	      	L_REMIT_TBL(V_N) := REMIT_OBJ (
+				R.MGRT_NO,
+	        	R.DPSTR_NM,
+	        	R.BANK_NM,
+	        	R.ACCNO,
+	        	V_REMIT_DIVID_AMT
+	      	);
+	
+			--송금분할이 완료되면 루프를 종료한다.
+	    	EXIT WHEN V_PRSS_CNT = V_REMIT_DIVID_CNT;
+	
+	    END LOOP;
+	
+	  ELSE
+	    
+		--송금액이 이체한도를 초과하지 않는 경우
+		--해당 이체내역을 테이블 컬렉션에 그대로 저장한다.
+	    L_REMIT_TBL.EXTEND;
+	              
+	    V_N := V_N+1;
+	
+	    L_REMIT_TBL(V_N) := REMIT_OBJ ( 
+			R.MGRT_NO,
+	      	R.DPSTR_NM,
+	    	R.BANK_NM,
+	    	R.ACCNO,
+	    	R.REQUST_AMT
+	    ); 
+	
+	  END IF;
+	  
+	END;
+
+END LOOP;
+
+RETURN L_REMIT_TBL;
+
+END;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;4-테이블-컬렉션-조회&quot;&gt;4. 테이블 컬렉션 조회&lt;/h2&gt;
+
+&lt;div class=&quot;language-sql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MGRT_NO&lt;/span&gt;
+	 &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DPSTR_NM&lt;/span&gt;	
+	 &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ACCNO&lt;/span&gt;
+	 &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;BANK_NM&lt;/span&gt;
+	 &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;REQUST_AMT&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AA&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MGRT_NO&lt;/span&gt;
+			 &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AA&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;DPSTR_NM&lt;/span&gt;      &lt;span class=&quot;c1&quot;&gt;--예금주&lt;/span&gt;
+			 &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AA&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;BANK_NM&lt;/span&gt;       &lt;span class=&quot;c1&quot;&gt;--은행명&lt;/span&gt;
+			 &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AA&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ACCNO&lt;/span&gt;         &lt;span class=&quot;c1&quot;&gt;--계좌번호&lt;/span&gt;
+			 &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AA&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;REQUST_AMT&lt;/span&gt;    &lt;span class=&quot;c1&quot;&gt;--금액&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;TABLE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; 
+			&lt;span class=&quot;k&quot;&gt;CAST&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;F_REMIT_TBL_RET&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'1,2,3,4'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;REMIT_TBL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AA&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;5-조회결과&quot;&gt;5. 조회결과&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&quot;/assets/article_images/2021-02-25-note-oracle-example-remitt-split/oracle-example-remitt-split.png&quot; alt=&quot;이체한도에 송금분할 결과 조회&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;끝&quot;&gt;끝!&lt;/h2&gt;</content><author><name></name></author><category term="개발노트" /><category term="오라클" /><category term="예제" /><category term="송금분할" /><category term="테이블" /><category term="콜렉션" /><summary type="html">이전에 테이블 유형의 컬렉션을 다루는 방법와 콤마로 이루어진 문자열을 행으로 변환하는 내용을 정리하여 공유했었다. 이번에는 그 최종 결정체인 건당 이체한도에 따라서 송금액을 분할하는 예제를 다루보겠다.</summary></entry><entry><title type="html">(넥사크로) 효율적인 데이터셋 탐색을 위한 리팩토링</title><link href="http://codegizer.me/2020/10/08/note-nexacro-dataset-inquiry.html" rel="alternate" type="text/html" title="(넥사크로) 효율적인 데이터셋 탐색을 위한 리팩토링" /><published>2020-10-08T21:00:00+09:00</published><updated>2020-10-08T21:00:00+09:00</updated><id>http://codegizer.me/2020/10/08/note-nexacro-dataset-inquiry</id><content type="html" xml:base="http://codegizer.me/2020/10/08/note-nexacro-dataset-inquiry.html">&lt;p&gt;일반적인 경험으로는 넥사크로 환경에서 특정 체크박스로 선택된 내역만을 별도의 데이터셋에 담아 저장 이나 삭제 등의 트랜잭션 요청을 하는 일이 빈번했다. 그리고 이 체크박스가 선택된 것만을 골라내기 위해서 FOR문으로 반복하고 체크박스가 체크되었는지의 대부분의 로직에 공통적으로 적용되고 있다는 것을 깨달았다.&lt;/p&gt;
 
 &lt;p&gt;그래서 특정 조건에 대한 탐색을 수행하고 해당 ROW의 처리를 콜백함수를 요청하도록 하여 코드를 효율적으로 리팩토리할 수 있었다.&lt;/p&gt;
 

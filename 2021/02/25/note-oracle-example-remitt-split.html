@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>(오라클) 건당 이체한도에 따른 송금분할 예제</title>
+  <meta name="description" content="이전에 테이블 유형의 컬렉션을 다루는 방법와 콤마로 이루어진 문자열을 행으로 변환하는 내용을 정리하여 공유했었다. 이번에는 그 최종 결정체인 건당 이체한도에 따라서 송금액을 분할하는 예제를 다루보겠다.">
+
+  <link rel="stylesheet"href="/css/main.css?1614257767416895400" />
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="canonical" href="http://codegizer.me/2021/02/25/note-oracle-example-remitt-split.html">
+  <link rel="alternate" type="application/rss+xml" title="코드자이저&#39;s 기술 블로그" href="/feed.xml">
+  
+  
+
+  <script type="text/javascript" src="/assets/js/jquery-3.3.1.min.js"></script>
+</head>
+
+
+  <body>
+
+    <!--
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId            : '489041618160466',
+      autoLogAppEvents : true,
+      xfbml            : true,
+      version          : 'v2.12'
+    });
+  };
+
+  (function(d, s, id){
+     var js, fjs = d.getElementsByTagName(s)[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement(s); js.id = id;
+     js.src = "https://connect.facebook.net/en_US/sdk.js";
+     fjs.parentNode.insertBefore(js, fjs);
+   }(document, 'script', 'facebook-jssdk'));
+</script>
+-->
+<header class="site-header" role="banner">
+
+  <div class="wrapper">
+    
+    
+    <a class="site-title" href="/">코드자이저&#39;s 기술 블로그</a>
+  
+    
+      <nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+              <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+              <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger">
+          
+            
+            
+          
+            
+            
+            <a class="page-link" href="/about/">About</a>
+            
+          
+            
+            
+            <a class="page-link" href="/about/">About</a>
+            
+          
+            
+            
+            <a class="page-link" href="/categories/">Categories</a>
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+            <a class="page-link" href="/tags/">Tags</a>
+            
+          
+            
+            
+          
+            
+            
+          
+        </div>
+      </nav>
+    
+  </div>
+</header>
+
+
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">(오라클) 건당 이체한도에 따른 송금분할 예제</h1>
+    <p class="post-meta">
+      <time datetime="2021-02-25T21:45:00+09:00" itemprop="datePublished">
+        
+        Feb 25, 2021
+      </time>
+      </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <ul class="section-nav">
+<li class="toc-entry toc-h2"><a href="#1-우선-예제에-사용될-db테이블와-데이터를-아래와-같이-생성해-보자">1. 우선 예제에 사용될 DB테이블와 데이터를 아래와 같이 생성해 보자.</a></li>
+<li class="toc-entry toc-h2"><a href="#2-객체유형와-테이블-컬렉션-생성">2. 객체유형와 테이블 컬렉션 생성</a></li>
+<li class="toc-entry toc-h2"><a href="#3-이체한도에-따라서-송금액을-분할하여-컬렉션을-리턴하는-함수-생성">3. 이체한도에 따라서 송금액을 분할하여 컬렉션을 리턴하는 함수 생성</a></li>
+<li class="toc-entry toc-h2"><a href="#4-테이블-컬렉션-조회">4. 테이블 컬렉션 조회</a></li>
+<li class="toc-entry toc-h2"><a href="#5-조회결과">5. 조회결과</a></li>
+<li class="toc-entry toc-h2"><a href="#끝">끝!</a></li>
+</ul><p>이전에 테이블 유형의 컬렉션을 다루는 방법와 콤마로 이루어진 문자열을 행으로 변환하는 내용을 정리하여 공유했었다. 이번에는 그 최종 결정체인 건당 이체한도에 따라서 송금액을 분할하는 예제를 다루보겠다.</p>
+
+<h2 id="1-우선-예제에-사용될-db테이블와-데이터를-아래와-같이-생성해-보자">
+<a class="anchor" href="#1-%EC%9A%B0%EC%84%A0-%EC%98%88%EC%A0%9C%EC%97%90-%EC%82%AC%EC%9A%A9%EB%90%A0-db%ED%85%8C%EC%9D%B4%EB%B8%94%EC%99%80-%EB%8D%B0%EC%9D%B4%ED%84%B0%EB%A5%BC-%EC%95%84%EB%9E%98%EC%99%80-%EA%B0%99%EC%9D%B4-%EC%83%9D%EC%84%B1%ED%95%B4-%EB%B3%B4%EC%9E%90" aria-hidden="true"><span class="octicon octicon-link"></span></a>1. 우선 예제에 사용될 DB테이블와 데이터를 아래와 같이 생성해 보자.</h2>
+<pre><code class="language-SQL">CREATE TABLE REMIT_REQUST (
+	MGRT_NO		NUMBER(10,0),    
+	DPSTR_NM 	VARCHAR2(50),
+	BANK_NM		VARCHAR2(50),
+	ACCNO		VARCHAR2(50),
+	REQUST_AMT	NUMBER(10,0)
+);
+
+INSERT INTO REMIT_REQUST (MGRT_NO, DPSTR_NM, BANK_NM, ACCNO, REQUST_AMT) VALUES ( 1, '예금주1','한국은행1','111-111-111',5000000);
+INSERT INTO REMIT_REQUST (MGRT_NO, DPSTR_NM, BANK_NM, ACCNO, REQUST_AMT) VALUES ( 2, '예금주2','한국은행2','222-222-222',2500000);
+INSERT INTO REMIT_REQUST (MGRT_NO, DPSTR_NM, BANK_NM, ACCNO, REQUST_AMT) VALUES ( 3, '예금주3','한국은행3','333-333-333',2500000);
+INSERT INTO REMIT_REQUST (MGRT_NO, DPSTR_NM, BANK_NM, ACCNO, REQUST_AMT) VALUES ( 4, '예금주4','한국은행4','444-444-444',15000000);
+</code></pre>
+
+<h2 id="2-객체유형와-테이블-컬렉션-생성">
+<a class="anchor" href="#2-%EA%B0%9D%EC%B2%B4%EC%9C%A0%ED%98%95%EC%99%80-%ED%85%8C%EC%9D%B4%EB%B8%94-%EC%BB%AC%EB%A0%89%EC%85%98-%EC%83%9D%EC%84%B1" aria-hidden="true"><span class="octicon octicon-link"></span></a>2. 객체유형와 테이블 컬렉션 생성</h2>
+
+<pre><code class="language-SQL">--객체유형 생성
+create or replace TYPE REMIT_OBJ IS OBJECT (
+	MGRT_NO		NUMBER(10,0),    
+	DPSTR_NM 	VARCHAR2(50),
+	BANK_NM		VARCHAR2(50),
+	ACCNO		VARCHAR2(50),
+	REQUST_AMT	NUMBER(10,0)
+);
+</code></pre>
+
+<pre><code class="language-SQL">-- 테이블 컬렉션 생성
+create or replace TYPE REMIT_TBL IS TABLE OF REMIT_OBJ;
+</code></pre>
+
+<h2 id="3-이체한도에-따라서-송금액을-분할하여-컬렉션을-리턴하는-함수-생성">
+<a class="anchor" href="#3-%EC%9D%B4%EC%B2%B4%ED%95%9C%EB%8F%84%EC%97%90-%EB%94%B0%EB%9D%BC%EC%84%9C-%EC%86%A1%EA%B8%88%EC%95%A1%EC%9D%84-%EB%B6%84%ED%95%A0%ED%95%98%EC%97%AC-%EC%BB%AC%EB%A0%89%EC%85%98%EC%9D%84-%EB%A6%AC%ED%84%B4%ED%95%98%EB%8A%94-%ED%95%A8%EC%88%98-%EC%83%9D%EC%84%B1" aria-hidden="true"><span class="octicon octicon-link"></span></a>3. 이체한도에 따라서 송금액을 분할하여 컬렉션을 리턴하는 함수 생성</h2>
+
+<pre><code class="language-SQL">CREATE OR REPLACE FUNCTION   F_REMIT_TBL_RET
+(
+	IN_MGRT_KEYS VARCHAR2
+)
+RETURN REMIT_TBL
+IS
+	L_REMIT_TBL REMIT_TBL:=REMIT_TBL();
+	V_REMIT_DIVID_CNT NUMBER(22,0);
+	V_REMIT_DIVID_AMT NUMBER(22,0);
+	V_REMIT_SUMT_AMT NUMBER(22,0);
+	V_REMIT_DIVID_MOD NUMBER(22,0);
+	V_SET_DIVID_AMT NUMBER(22,0) := 5000000;	--이체한도
+	V_N NUMBER(22,0) := 0;
+	V_PRSS_CNT NUMBER(22,0) :=0;
+	rc sys_refcursor;
+BEGIN
+
+--이체처리를 할 내역의 관리번호를 콤마로 결합된 문자열을 전달하면
+--행으로 변환하여 IN 절을 이용하여 송금요청 테이블을 조회한다.
+FOR R IN (
+    SELECT  AA.MGRT_NO
+			, AA.DPSTR_NM
+            , AA.BANK_NM
+            , AA.ACCNO
+            , AA.REQUST_AMT
+      FROM REMIT_REQUST AA
+INNER JOIN (
+
+            SELECT distinct regexp_substr(IN_MGRT_KEYS, '[^\\\\\\\\,]+', 1, LEVEL) MGRT_NO
+                FROM DUAL
+            CONNECT BY LEVEL &lt;= length(regexp_replace(IN_MGRT_KEYS, '[^\\\\\\\\,]+',''))+1                         
+      ) TBL_MGRT
+      ON AA.MGRT_NO = TBL_MGRT.MGRT_NO	
+
+)
+
+--이체처리 요청내역을 커서를 이용해 루프를 돌린다.
+LOOP
+
+	BEGIN
+	
+	  --송금액이 이체한도를 초과 하는 경우
+	  IF R.REQUST_AMT &gt; V_SET_DIVID_AMT THEN
+	
+	    V_REMIT_DIVID_MOD := R.REQUST_AMT MOD V_SET_DIVID_AMT;
+
+		--이체한도에 따른 분할되는 이체 건수
+	    V_REMIT_DIVID_CNT := CEIL(R.REQUST_AMT / V_SET_DIVID_AMT);
+
+		--처리건수 카운트 초기화
+	    V_PRSS_CNT := 0;
+	
+	    LOOP
+			--컬렉션을 확장한다.	    
+	    	L_REMIT_TBL.EXTEND;
+
+			--컬렉션 확장에 따른 인덱스 증가
+	    	V_N := V_N+1;
+
+			-- 처리건수 카운트 '1' 증가
+	    	V_PRSS_CNT := V_PRSS_CNT + 1;				
+
+			-- 마지막 분할 건
+	    	IF V_PRSS_CNT = V_REMIT_DIVID_CNT THEN
+				
+				--이체한도로 나누었을 때 나머지가 0인경우(분할 금액이 모두 동일한경우)
+				IF V_REMIT_DIVID_MOD = 0 THEN
+					-- 마지막 불한 송금액은 이체한도액이 된다.
+					V_REMIT_DIVID_AMT := V_SET_DIVID_AMT;
+				ELSE
+					--나머지가 0으로 나누어 떨어지지 않는 경우
+					--나머지 금액을 마지막 송금액으로 한다.
+			        V_REMIT_DIVID_AMT := V_REMIT_DIVID_MOD;
+				END IF;
+
+	    	ELSE
+
+				--송금액을 이체한도 만큼으로 분할한다.
+	    		V_REMIT_DIVID_AMT := V_SET_DIVID_AMT;
+
+	    	END IF;
+
+			-- 테이블 컬렉션에 분할된 금액을 담는다.
+	      	L_REMIT_TBL(V_N) := REMIT_OBJ (
+				R.MGRT_NO,
+	        	R.DPSTR_NM,
+	        	R.BANK_NM,
+	        	R.ACCNO,
+	        	V_REMIT_DIVID_AMT
+	      	);
+	
+			--송금분할이 완료되면 루프를 종료한다.
+	    	EXIT WHEN V_PRSS_CNT = V_REMIT_DIVID_CNT;
+	
+	    END LOOP;
+	
+	  ELSE
+	    
+		--송금액이 이체한도를 초과하지 않는 경우
+		--해당 이체내역을 테이블 컬렉션에 그대로 저장한다.
+	    L_REMIT_TBL.EXTEND;
+	              
+	    V_N := V_N+1;
+	
+	    L_REMIT_TBL(V_N) := REMIT_OBJ ( 
+			R.MGRT_NO,
+	      	R.DPSTR_NM,
+	    	R.BANK_NM,
+	    	R.ACCNO,
+	    	R.REQUST_AMT
+	    ); 
+	
+	  END IF;
+	  
+	END;
+
+END LOOP;
+
+RETURN L_REMIT_TBL;
+
+END;
+</code></pre>
+
+<h2 id="4-테이블-컬렉션-조회">
+<a class="anchor" href="#4-%ED%85%8C%EC%9D%B4%EB%B8%94-%EC%BB%AC%EB%A0%89%EC%85%98-%EC%A1%B0%ED%9A%8C" aria-hidden="true"><span class="octicon octicon-link"></span></a>4. 테이블 컬렉션 조회</h2>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="n">MGRT_NO</span>
+	 <span class="p">,</span> <span class="n">DPSTR_NM</span>	
+	 <span class="p">,</span> <span class="n">ACCNO</span>
+	 <span class="p">,</span> <span class="n">BANK_NM</span>
+	 <span class="p">,</span> <span class="n">REQUST_AMT</span>
+<span class="k">FROM</span> <span class="p">(</span>
+		<span class="k">SELECT</span> <span class="n">AA</span><span class="p">.</span><span class="n">MGRT_NO</span>
+			 <span class="p">,</span> <span class="n">AA</span><span class="p">.</span><span class="n">DPSTR_NM</span>      <span class="c1">--예금주</span>
+			 <span class="p">,</span> <span class="n">AA</span><span class="p">.</span><span class="n">BANK_NM</span>       <span class="c1">--은행명</span>
+			 <span class="p">,</span> <span class="n">AA</span><span class="p">.</span><span class="n">ACCNO</span>         <span class="c1">--계좌번호</span>
+			 <span class="p">,</span> <span class="n">AA</span><span class="p">.</span><span class="n">REQUST_AMT</span>    <span class="c1">--금액</span>
+		<span class="k">FROM</span> <span class="k">TABLE</span><span class="p">(</span> 
+			<span class="k">CAST</span><span class="p">(</span><span class="n">F_REMIT_TBL_RET</span><span class="p">(</span><span class="s1">'1,2,3,4'</span><span class="p">)</span> <span class="k">AS</span> <span class="n">REMIT_TBL</span><span class="p">)</span>
+		<span class="p">)</span> <span class="n">AA</span>
+<span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="5-조회결과">
+<a class="anchor" href="#5-%EC%A1%B0%ED%9A%8C%EA%B2%B0%EA%B3%BC" aria-hidden="true"><span class="octicon octicon-link"></span></a>5. 조회결과</h2>
+<p><img src="/assets/article_images/2021-02-25-note-oracle-example-remitt-split/oracle-example-remitt-split.png" alt="이체한도에 송금분할 결과 조회"></p>
+
+<h2 id="끝">
+<a class="anchor" href="#%EB%81%9D" aria-hidden="true"><span class="octicon octicon-link"></span></a>끝!</h2>
+
+    <p class="tags">
+      
+        <a href="/tags#오라클-ref">오라클</a>
+      
+        <a href="/tags#예제-ref">예제</a>
+      
+        <a href="/tags#송금분할-ref">송금분할</a>
+      
+        <a href="/tags#테이블-ref">테이블</a>
+      
+        <a href="/tags#콜렉션-ref">콜렉션</a>
+      
+    </p>
+  </div>
+
+  <footer class="post-footer">
+    <section class="share">
+      <div class="fb-like" data-href="http://codegizer.me/2021/02/25/note-oracle-example-remitt-split.html" data-layout="button_count" data-action="like" data-show-faces="true" data-share="true"></div>
+      <a data-pocket-label="pocket" data-pocket-count="none" class="pocket-btn" data-lang="ko"></a>
+      
+    </section>
+  </footer>
+  <div class="read-next">
+    
+    
+      <a class="read-next-story prev no-cover" href="/2020/10/08/note-nexacro-dataset-inquiry.html">
+        <section class="post">
+          <h2>(넥사크로) 효율적인 데이터셋 탐색을 위한  리팩토링</h2>
+          <p>일반적인 경험으로는 넥사크로 환경에서 특정 체크박스로 선택된 내역만을 별도의 데이터셋에 담아 저장 이나 삭제 등의...</p>
+        </section>
+      </a>
+    
+    </div>
+  
+</article>
+
+<div id="disqus_thread"></div>
+<script>
+
+/**
+*  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+*  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
+/*
+var disqus_config = function () {
+this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://kodeujaijeoyi-gisulbeulrogeu.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+<script>
+
+  $(document).ready(function(){
+
+      //Jekyll-TOC 관련
+      //TOC을 이용하면 마크다운 파일이 HTML로 변환되면서 
+      //본문의 헤딩 태그 요소에 id값이 추가된다.
+      //<h3 id="목차1">
+
+      // post affix
+      if($('.section-nav').length) {
+          var affixList = [];            
+          $('.section-nav li a').each(function() {
+              affixList.push($(this).attr('href'));
+          });
+          
+          $(window).on('scroll', function() {
+              var scrollTop = $(window).scrollTop();
+              console.log(scrollTop);
+              // 스크롤이 풋터에 도달하면 Toc을 숨긴다.
+              if (scrollTop > 100 && scrollTop < $('.post-footer').offset().top - $(window).height() + 300) {                
+                  $('.section-nav').addClass('active');
+              } else {
+                  $('.section-nav').removeClass('active');
+              }
+
+              for (let i = 1; i < affixList.length; i++) {
+
+                    // <h3 id="목차1">
+                    // 스크롤 화면이 문서에서 헤딩요소가 위치한 곳에 
+                    // 다다르면 해당 TOC을 활성시킨다.
+                    if(scrollTop < $(affixList[i]).offset().top - 100) {
+                      var activeLi = $(".section-nav li a[href='" + affixList[i-1] + "']");
+                      if (!activeLi.hasClass('active')) {
+                          $('.section-nav li a').removeClass('active');
+                          activeLi.addClass('active');
+                      }
+                      break;
+                  }
+                  
+                  if (i == affixList.length - 1) {
+                      var activeLi = $(".section-nav li a[href='" + affixList[i] + "]");
+                      if (!activeLi.hasClass('active')) {
+                          $('.section-nav li a').removeClass('active');
+                          activeLi.addClass('active');
+                      }
+                  }
+              }
+          });
+      }
+  });
+
+</script>
+
+      </div>
+    </main>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">코드자이저&#39;s 기술 블로그</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li>
+            
+              코드자이저&#39;s 기술 블로그
+            
+            </li>
+            
+            <li><a href="mailto:codegizer.kim@gmail.com">codegizer.kim@gmail.com</a></li>
+            
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2">
+        <ul class="social-media-list">
+          
+          <li>
+            <a href="https://github.com/codegizer"><span class="icon icon--github"><svg viewBox="0 0 16 16" width="16px" height="16px"><path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/></svg>
+</span><span class="username">codegizer</span></a>
+
+          </li>
+          
+
+          
+          <li>
+            <a href="https://twitter.com/codegizer_kim"><span class="icon icon--twitter"><svg viewBox="0 0 16 16" width="16px" height="16px"><path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/></svg>
+</span><span class="username">codegizer_kim</span></a>
+
+          </li>
+          
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-3">
+        <p></p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-169288078-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-169288078-1');
+</script>
+
+  </body>
+
+</html>
